@@ -54,6 +54,36 @@ const PARKING_LOCATIONS = {
         lat: 28.7491,
         lng: 77.0674,
         zone: 'North West Delhi'
+    },
+    'mcd-civic-centre': {
+        name: 'Municipal Corporation of Delhi Civic Center',
+        lat: 28.6412,
+        lng: 77.2277,
+        zone: 'Central Delhi'
+    },
+    'mr-public-school': {
+        name: 'M.R. Public School',
+        lat: 28.6745,
+        lng: 77.0605,
+        zone: 'Rohini'
+    },
+    'kamla-nagar': {
+        name: 'Kamla Nagar',
+        lat: 28.6809,
+        lng: 77.2046,
+        zone: 'Civil Lines'
+    },
+    'model-town': {
+        name: 'Model Town',
+        lat: 28.7095,
+        lng: 77.1888,
+        zone: 'Civil Lines'
+    },
+    'palika-bazar': {
+        name: 'Palika Bazar',
+        lat: 28.6311,
+        lng: 77.2191,
+        zone: 'New Delhi'
     }
 };
 
@@ -72,19 +102,56 @@ let attendanceRecords = JSON.parse(localStorage.getItem('attendanceRecords') || 
 // Auto-select parking location from user profile
 function initializeParkingLocation() {
     // Get contractor's assigned parking location from user object
-    // This should come from the backend when contractor is created by admin
-    const assignedLocation = user.parkingLocation || user.assignedLocation || 'rithala'; // Default to Rithala if not set
+    const assignedLocation = user.parkingLocation || user.assignedLocation;
+    const assignedLotName = user.parkingLotName;
 
-    if (PARKING_LOCATIONS[assignedLocation]) {
-        selectedParkingLot = PARKING_LOCATIONS[assignedLocation];
+    let foundLocation = null;
 
-        // Display assigned location info
+    // 1. Try to find by ID/Key
+    if (assignedLocation && PARKING_LOCATIONS[assignedLocation]) {
+        foundLocation = PARKING_LOCATIONS[assignedLocation];
+    }
+
+    // 2. Try to find by Name match
+    if (!foundLocation && assignedLotName) {
+        for (const [key, loc] of Object.entries(PARKING_LOCATIONS)) {
+            if (loc.name.toLowerCase() === assignedLotName.toLowerCase()) {
+                foundLocation = loc;
+                break;
+            }
+        }
+    }
+
+    if (foundLocation) {
+        // Known location with coordinates
+        selectedParkingLot = foundLocation;
+
         document.getElementById('assignedLocationName').textContent = selectedParkingLot.name;
         document.getElementById('assignedLocationZone').textContent = selectedParkingLot.zone;
         document.getElementById('assignedLocationCoords').textContent =
             `${selectedParkingLot.lat.toFixed(6)}, ${selectedParkingLot.lng.toFixed(6)}`;
+    } else if (assignedLotName) {
+        // Custom location created by Admin (No coordinates known)
+        // We will allow attendance for these custom locations to unblock the user
+        selectedParkingLot = {
+            name: assignedLotName,
+            lat: null,
+            lng: null,
+            zone: 'Custom Location',
+            isCustom: true
+        };
 
-        // Check location immediately
+        document.getElementById('assignedLocationName').textContent = selectedParkingLot.name;
+        document.getElementById('assignedLocationZone').textContent = "Assigned Zone";
+        document.getElementById('assignedLocationCoords').textContent = "Coordinates Not Required";
+    } else {
+        // Fallback to default if absolutely nothing is found (for demo)
+        // But better to show the "No Location" error
+        const defaultLoc = PARKING_LOCATIONS['rithala'];
+        // selectedParkingLot = defaultLoc; // Uncomment to force default
+    }
+
+    if (selectedParkingLot) {
         checkLocation();
     } else {
         // If no valid location assigned, show error
@@ -109,6 +176,16 @@ function checkLocation() {
         statusText.textContent = 'No Parking Location Assigned';
         statusDetail.textContent = 'Please contact admin to assign a parking location to your account';
         isLocationVerified = false;
+        updateSubmitButton();
+        return;
+    }
+
+    // Handle custom location without coordinates (Skip Geofence)
+    if (selectedParkingLot.isCustom) {
+        statusDiv.className = 'location-status inside';
+        statusText.textContent = 'Location Verified ✓';
+        statusDetail.textContent = 'Custom location detected - Geofence check skipped';
+        isLocationVerified = true;
         updateSubmitButton();
         return;
     }
