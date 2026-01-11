@@ -52,7 +52,57 @@ function filterZone(zone) {
         event.target.classList.add('active');
     }
 
-    // Filter parking lots by zone (to be implemented with actual data)
+    // Map URLs for different Delhi zones
+    const zoneMapUrls = {
+        'all': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d224346.48129763652!2d76.87677984999999!3d28.52758485!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd5b347eb62d%3A0x52c2b7494e204dce!2sNew%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin',
+        'north': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112065.9!2d77.1025!3d28.7041!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d047309fff32f%3A0xde6b1d1bb3b7e0a8!2sNorth%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890124!5m2!1sen!2sin',
+        'south': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112173.5!2d77.2090!3d28.5355!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce3e564c2f2a5%3A0x7e6267e54a0c1e8!2sSouth%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890125!5m2!1sen!2sin',
+        'central': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112095.2!2d77.2090!3d28.6139!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd37b5f3bfe1%3A0x7e6267e54a0c1e9!2sCentral%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890126!5m2!1sen!2sin',
+        'west': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112134.8!2d77.0688!3d28.6692!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d03a4a0000001%3A0x7e6267e54a0c1ea!2sWest%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890127!5m2!1sen!2sin',
+        'east': 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112115.3!2d77.2773!3d28.6692!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfce26ec085ef%3A0x441e32f4fa5002a!2sEast%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890128!5m2!1sen!2sin'
+    };
+
+    // Zone information data
+    const zoneInfo = {
+        'all': { name: 'All Delhi', lots: '25+', capacity: '5000+' },
+        'north': { name: 'North Delhi', lots: '6', capacity: '1200' },
+        'south': { name: 'South Delhi', lots: '7', capacity: '1400' },
+        'central': { name: 'Central Delhi', lots: '5', capacity: '1000' },
+        'west': { name: 'West Delhi', lots: '4', capacity: '800' },
+        'east': { name: 'East Delhi', lots: '3', capacity: '600' }
+    };
+
+    // Show loading indicator
+    const mapIframe = document.getElementById('delhiMap');
+    const loadingIndicator = document.getElementById('mapLoadingIndicator');
+    const zoneInfoDiv = document.getElementById('zoneInfo');
+
+    if (mapIframe && loadingIndicator) {
+        loadingIndicator.style.display = 'block';
+        mapIframe.style.display = 'none';
+
+        // Update map source
+        setTimeout(() => {
+            mapIframe.src = zoneMapUrls[zone] || zoneMapUrls['all'];
+
+            // Hide loading and show map after a short delay
+            setTimeout(() => {
+                loadingIndicator.style.display = 'none';
+                mapIframe.style.display = 'block';
+            }, 800);
+        }, 300);
+    }
+
+    // Update zone information display
+    if (zoneInfoDiv && zoneInfo[zone]) {
+        document.getElementById('zoneNameDisplay').textContent = zoneInfo[zone].name;
+        document.getElementById('zoneParkingLots').textContent = zoneInfo[zone].lots;
+        document.getElementById('zoneTotalCapacity').textContent = zoneInfo[zone].capacity + ' vehicles';
+
+        // Show zone info for specific zones, hide for 'all'
+        zoneInfoDiv.style.display = zone === 'all' ? 'none' : 'block';
+    }
+
     console.log('Filtering by zone:', zone);
 }
 

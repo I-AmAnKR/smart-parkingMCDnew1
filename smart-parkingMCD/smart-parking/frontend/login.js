@@ -2,7 +2,7 @@ const API_URL = 'http://localhost:3000/api';
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const loginBtn = document.getElementById('loginBtn');
@@ -25,6 +25,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
+            // Validate role matches selected tab
+            if (data.user.role !== currentRole) {
+                errorMessage.textContent = `Invalid credentials for ${currentRole} login. Please use the correct login tab.`;
+                errorMessage.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+                return;
+            }
+
             // Store token and user info
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));

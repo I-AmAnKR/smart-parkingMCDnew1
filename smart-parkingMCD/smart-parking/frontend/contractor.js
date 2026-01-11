@@ -22,6 +22,208 @@ setInterval(() => {
     loadRecentLogs();
 }, 10000);
 
+
+// ========== SHIFT TIMER FUNCTIONALITY ==========
+let shiftStartTime = null;
+let shiftEndTime = null;
+let timerInterval = null;
+let currentShiftType = 'morning'; // 'morning' or 'night'
+
+// Shift schedules
+const SHIFT_SCHEDULES = {
+    morning: {
+        start: '9:00 AM',
+        end: '5:00 PM',
+        icon: '☀️'
+    },
+    night: {
+        start: '5:00 PM',
+        end: '11:00 PM',
+        icon: '🌙'
+    }
+};
+
+function selectShift(shiftType) {
+    // Don't allow changing shift if one is already active
+    if (shiftStartTime && !shiftEndTime) {
+        alert('Please end the current shift before selecting a different shift type.');
+        return;
+    }
+
+    currentShiftType = shiftType;
+    localStorage.setItem('currentShiftType', shiftType);
+
+    // Update button styles
+    const morningBtn = document.getElementById('morningShiftBtn');
+    const nightBtn = document.getElementById('nightShiftBtn');
+
+    if (shiftType === 'morning') {
+        morningBtn.style.background = 'rgba(255,255,255,0.2)';
+        morningBtn.style.border = '2px solid white';
+        nightBtn.style.background = 'rgba(255,255,255,0.1)';
+        nightBtn.style.border = '2px solid rgba(255,255,255,0.3)';
+    } else {
+        nightBtn.style.background = 'rgba(255,255,255,0.2)';
+        nightBtn.style.border = '2px solid white';
+        morningBtn.style.background = 'rgba(255,255,255,0.1)';
+        morningBtn.style.border = '2px solid rgba(255,255,255,0.3)';
+    }
+
+    // Update scheduled times
+    updateScheduledTimes();
+}
+
+function updateScheduledTimes() {
+    const schedule = SHIFT_SCHEDULES[currentShiftType];
+    document.getElementById('scheduledStart').textContent = `Scheduled: ${schedule.start}`;
+    document.getElementById('scheduledEnd').textContent = `Scheduled: ${schedule.end}`;
+}
+
+
+function initializeShiftTimer() {
+    // Load saved shift type
+    const savedShiftType = localStorage.getItem('currentShiftType');
+    if (savedShiftType) {
+        currentShiftType = savedShiftType;
+        selectShift(currentShiftType);
+    } else {
+        updateScheduledTimes();
+    }
+
+    // Load saved shift data from localStorage
+    const savedShiftStart = localStorage.getItem('shiftStartTime');
+    const savedShiftEnd = localStorage.getItem('shiftEndTime');
+
+    if (savedShiftStart) {
+        shiftStartTime = new Date(savedShiftStart);
+        updateShiftDisplay();
+
+        if (!savedShiftEnd) {
+            // Shift is still active
+            startTimer();
+            const statusElement = document.getElementById('shiftStatus');
+            statusElement.textContent = 'Active';
+            statusElement.style.color = '#28a745';
+            document.getElementById('startShiftBtn').disabled = true;
+            document.getElementById('startShiftBtn').style.opacity = '0.5';
+            document.getElementById('endShiftBtn').disabled = false;
+            document.getElementById('endShiftBtn').style.opacity = '1';
+        } else {
+            // Shift has ended
+            shiftEndTime = new Date(savedShiftEnd);
+            updateShiftDisplay();
+        }
+    }
+}
+
+function startShift() {
+    shiftStartTime = new Date();
+    shiftEndTime = null;
+
+    // Save to localStorage
+    localStorage.setItem('shiftStartTime', shiftStartTime.toISOString());
+    localStorage.removeItem('shiftEndTime');
+
+    // Update UI
+    const statusElement = document.getElementById('shiftStatus');
+    statusElement.textContent = 'Active';
+    statusElement.style.color = '#28a745';
+    document.getElementById('startShiftBtn').disabled = true;
+    document.getElementById('startShiftBtn').style.opacity = '0.5';
+    document.getElementById('endShiftBtn').disabled = false;
+    document.getElementById('endShiftBtn').style.opacity = '1';
+
+    updateShiftDisplay();
+    startTimer();
+
+    console.log('✅ Shift started at:', shiftStartTime.toLocaleTimeString());
+}
+
+function endShift() {
+    if (!shiftStartTime) return;
+
+    shiftEndTime = new Date();
+
+    // Save to localStorage
+    localStorage.setItem('shiftEndTime', shiftEndTime.toISOString());
+
+    // Stop timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    // Update UI
+    const statusElement = document.getElementById('shiftStatus');
+    statusElement.textContent = 'Ended';
+    statusElement.style.color = '#dc3545';
+    document.getElementById('endShiftBtn').disabled = true;
+    document.getElementById('endShiftBtn').style.opacity = '0.5';
+
+    updateShiftDisplay();
+
+    console.log('✅ Shift ended at:', shiftEndTime.toLocaleTimeString());
+
+    // Show summary
+    const duration = shiftEndTime - shiftStartTime;
+    const hours = Math.floor(duration / (1000 * 60 * 60));
+    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+    alert(`Shift Completed!\n\nDuration: ${hours}h ${minutes}m\nStart: ${shiftStartTime.toLocaleTimeString()}\nEnd: ${shiftEndTime.toLocaleTimeString()}`);
+}
+
+function startTimer() {
+    // Clear any existing timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+
+    // Update immediately
+    updateTimeElapsed();
+
+    // Update every second
+    timerInterval = setInterval(updateTimeElapsed, 1000);
+}
+
+function updateTimeElapsed() {
+    if (!shiftStartTime) return;
+
+    const now = shiftEndTime || new Date();
+    const elapsed = now - shiftStartTime;
+
+    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+
+    const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    document.getElementById('timeElapsed').textContent = timeString;
+}
+
+function updateShiftDisplay() {
+    if (shiftStartTime) {
+        document.getElementById('shiftStartTime').textContent = shiftStartTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    if (shiftEndTime) {
+        document.getElementById('shiftEndTime').textContent = shiftEndTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } else {
+        document.getElementById('shiftEndTime').textContent = '--:--';
+    }
+
+    updateTimeElapsed();
+}
+
+// Initialize shift timer after all functions are defined
+initializeShiftTimer();
+
+// ========== END SHIFT TIMER FUNCTIONALITY ==========
+
+
 // Navigation function
 function setActiveNav(element) {
     // Remove active class from all nav items
@@ -103,7 +305,7 @@ async function logEntry() {
     const actionMessage = document.getElementById('actionMessage');
 
     entryBtn.disabled = true;
-    entryBtn.textContent = 'Processing...';
+    entryBtn.innerHTML = 'Processing...';
     actionMessage.style.display = 'none';
 
     try {
@@ -118,28 +320,41 @@ async function logEntry() {
         const result = await response.json();
 
         if (result.success) {
-            actionMessage.className = 'action-message success';
-            actionMessage.textContent = '✓ Vehicle entry logged successfully';
+            actionMessage.style.background = '#d4edda';
+            actionMessage.style.color = '#155724';
+            actionMessage.style.border = '1px solid #c3e6cb';
+            actionMessage.textContent = 'Vehicle entry logged successfully';
 
             if (result.data.isViolation) {
-                actionMessage.className = 'action-message warning';
-                actionMessage.textContent = `⚠️ WARNING: Capacity exceeded by ${result.data.violationAmount} vehicles!`;
+                actionMessage.style.background = '#fff3cd';
+                actionMessage.style.color = '#856404';
+                actionMessage.style.border = '1px solid #ffc107';
+                actionMessage.textContent = `WARNING: Capacity exceeded by ${result.data.violationAmount} vehicles!`;
             }
         } else {
-            actionMessage.className = 'action-message error';
-            actionMessage.textContent = '✗ ' + result.message;
+            actionMessage.style.background = '#f8d7da';
+            actionMessage.style.color = '#721c24';
+            actionMessage.style.border = '1px solid #f5c6cb';
+            actionMessage.textContent = result.message;
         }
 
         actionMessage.style.display = 'block';
         loadStatus();
         loadRecentLogs();
     } catch (error) {
-        actionMessage.className = 'action-message error';
-        actionMessage.textContent = '✗ Failed to log entry';
+        actionMessage.style.background = '#f8d7da';
+        actionMessage.style.color = '#721c24';
+        actionMessage.style.border = '1px solid #f5c6cb';
+        actionMessage.textContent = 'Failed to log entry';
         actionMessage.style.display = 'block';
     } finally {
         entryBtn.disabled = false;
-        entryBtn.textContent = '➕ Vehicle Entry';
+        entryBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            Vehicle Entry
+        `;
     }
 }
 
@@ -148,7 +363,7 @@ async function logExit() {
     const actionMessage = document.getElementById('actionMessage');
 
     exitBtn.disabled = true;
-    exitBtn.textContent = 'Processing...';
+    exitBtn.innerHTML = 'Processing...';
     actionMessage.style.display = 'none';
 
     try {
@@ -163,23 +378,34 @@ async function logExit() {
         const result = await response.json();
 
         if (result.success) {
-            actionMessage.className = 'action-message success';
-            actionMessage.textContent = '✓ Vehicle exit logged successfully';
+            actionMessage.style.background = '#d4edda';
+            actionMessage.style.color = '#155724';
+            actionMessage.style.border = '1px solid #c3e6cb';
+            actionMessage.textContent = 'Vehicle exit logged successfully';
         } else {
-            actionMessage.className = 'action-message error';
-            actionMessage.textContent = '✗ ' + result.message;
+            actionMessage.style.background = '#f8d7da';
+            actionMessage.style.color = '#721c24';
+            actionMessage.style.border = '1px solid #f5c6cb';
+            actionMessage.textContent = result.message;
         }
 
         actionMessage.style.display = 'block';
         loadStatus();
         loadRecentLogs();
     } catch (error) {
-        actionMessage.className = 'action-message error';
-        actionMessage.textContent = '✗ Failed to log exit';
+        actionMessage.style.background = '#f8d7da';
+        actionMessage.style.color = '#721c24';
+        actionMessage.style.border = '1px solid #f5c6cb';
+        actionMessage.textContent = 'Failed to log exit';
         actionMessage.style.display = 'block';
     } finally {
         exitBtn.disabled = false;
-        exitBtn.textContent = '➖ Vehicle Exit';
+        exitBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            Vehicle Exit
+        `;
     }
 }
 

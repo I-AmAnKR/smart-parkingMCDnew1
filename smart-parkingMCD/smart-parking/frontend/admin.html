@@ -138,22 +138,54 @@
                         <h2 class="section-subtitle">Live Parking Network</h2>
                     </div>
                     <div class="zone-filters">
-                        <button class="zone-btn active" onclick="filterZone('all')">All</button>
-                        <button class="zone-btn" onclick="filterZone('north')">North</button>
-                        <button class="zone-btn" onclick="filterZone('south')">South</button>
-                        <button class="zone-btn" onclick="filterZone('central')">Central</button>
-                        <button class="zone-btn" onclick="filterZone('west')">West</button>
-                        <button class="zone-btn" onclick="filterZone('east')">East</button>
+                        <button class="zone-btn active" onclick="filterZone('all')">All Delhi</button>
+                        <button class="zone-btn" onclick="filterZone('north')">North Delhi</button>
+                        <button class="zone-btn" onclick="filterZone('south')">South Delhi</button>
+                        <button class="zone-btn" onclick="filterZone('central')">Central Delhi</button>
+                        <button class="zone-btn" onclick="filterZone('west')">West Delhi</button>
+                        <button class="zone-btn" onclick="filterZone('east')">East Delhi</button>
                     </div>
                 </div>
 
                 <!-- Delhi Map Container -->
-                <div class="delhi-map-container">
-                    <iframe
+                <div class="delhi-map-container" style="position: relative;">
+                    <!-- Map Controls Info -->
+                    <div
+                        style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); font-size: 0.75rem; color: #1a5490; font-weight: 600;">
+                        💡 Click & drag to move | Scroll to zoom
+                    </div>
+
+                    <div id="mapLoadingIndicator"
+                        style="display: none; text-align: center; padding: 100px; background: #f8f9fa; border-radius: 8px;">
+                        <p style="color: #1a5490; font-size: 1.3rem; font-weight: 600;">Loading map...</p>
+                    </div>
+                    <iframe id="delhiMap"
                         src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d224346.48129763652!2d76.87677984999999!3d28.52758485!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd5b347eb62d%3A0x52c2b7494e204dce!2sNew%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"
-                        width="100%" height="350" style="border:0; border-radius: 8px;" allowfullscreen=""
+                        width="100%" height="750"
+                        style="border:0; border-radius: 8px; pointer-events: auto; cursor: grab;" allowfullscreen=""
                         loading="lazy" referrerpolicy="no-referrer-when-downgrade">
                     </iframe>
+                </div>
+
+                <!-- Zone Information Display -->
+                <div id="zoneInfo"
+                    style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #1a5490 0%, #2d6ba8 100%); border-radius: 8px; color: white; display: none;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; font-weight: 700;">Zone Information</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">Zone Name</p>
+                            <p id="zoneNameDisplay" style="margin: 5px 0 0 0; font-size: 1rem; font-weight: 600;">-</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">Parking Lots</p>
+                            <p id="zoneParkingLots" style="margin: 5px 0 0 0; font-size: 1rem; font-weight: 600;">-</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">Total Capacity</p>
+                            <p id="zoneTotalCapacity" style="margin: 5px 0 0 0; font-size: 1rem; font-weight: 600;">-
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
