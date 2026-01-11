@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
+<head>`r`n
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCD Smart Parking - Login</title>
@@ -17,9 +18,181 @@
             background: #f8f9fa;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Government Header with Indian Flag */
+        .gov-header {
+            background: linear-gradient(135deg, #1a5490 0%, #0d3a6b 100%);
+            color: white;
+            padding: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Indian Flag Strip */
+        .flag-strip {
+            height: 4px;
+            display: flex;
+            width: 100%;
+        }
+
+        .flag-saffron {
+            flex: 1;
+            background: #FF9933;
+            animation: flagWave 3s ease-in-out infinite;
+        }
+
+        .flag-white {
+            flex: 1;
+            background: #FFFFFF;
+            position: relative;
+            animation: flagWave 3s ease-in-out infinite 0.1s;
+        }
+
+        .flag-green {
+            flex: 1;
+            background: #138808;
+            animation: flagWave 3s ease-in-out infinite 0.2s;
+        }
+
+        @keyframes flagWave {
+
+            0%,
+            100% {
+                transform: scaleY(1);
+            }
+
+            50% {
+                transform: scaleY(1.1);
+            }
+        }
+
+        /* Ashoka Chakra in center of white strip */
+        .flag-white::after {
+            content: '☸';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000080;
+            font-size: 3px;
+            animation: chakraSpin 10s linear infinite;
+        }
+
+        @keyframes chakraSpin {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .gov-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .gov-emblem {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .emblem-icon {
+            width: 55px;
+            height: 55px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: emblemGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes emblemGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 4px 20px rgba(255, 165, 0, 0.6);
+            }
+        }
+
+        .emblem-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .gov-title {
+            flex: 1;
+        }
+
+        .gov-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .gov-title p {
+            margin: 0;
+            font-size: 0.95rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .gov-title .hindi {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .gov-badges {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
         }
 
         .login-container {
@@ -347,6 +520,42 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .gov-header-content {
+                padding: 12px 20px;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .gov-emblem {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .emblem-icon {
+                width: 45px;
+                height: 45px;
+            }
+
+            .gov-title h1 {
+                font-size: 1.3rem;
+            }
+
+            .gov-title p {
+                font-size: 0.85rem;
+            }
+
+            .gov-badges {
+                flex-direction: column;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .badge {
+                width: 100%;
+                justify-content: center;
+            }
+
             .login-container {
                 grid-template-columns: 1fr;
                 max-width: 500px;
@@ -386,7 +595,43 @@
 </head>
 
 <body>
-    <div>
+    <!-- Government Header with Indian Flag -->
+    <header class="gov-header">
+        <!-- Indian Flag Strip -->
+        <div class="flag-strip">
+            <div class="flag-saffron"></div>
+            <div class="flag-white"></div>
+            <div class="flag-green"></div>
+        </div>
+
+        <!-- Header Content -->
+        <div class="gov-header-content">
+            <div class="gov-emblem">
+                <div class="emblem-icon">
+                    <!-- MCD Logo -->
+                    <img src="mcd-logo.png" alt="MCD Logo">
+                </div>
+                <div class="gov-title">
+                    <h1>Municipal Corporation of Delhi</h1>
+                    <p>दिल्ली नगर निगम</p>
+                    <p class="hindi">Smart Parking Management System</p>
+                </div>
+            </div>
+            <div class="gov-badges">
+                <div class="badge">
+                    <span class="badge-icon">🇮🇳</span>
+                    <span>Govt. of India</span>
+                </div>
+                <div class="badge">
+                    <span class="badge-icon">🔒</span>
+                    <span>Secure Portal</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="login-container">
             <!-- Left Side - Branding -->
             <div class="branding-section">
@@ -449,10 +694,10 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="login-footer">
-            <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
-        </div>
+    <div class="login-footer">
+        <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
     </div>
 
     <script>
@@ -513,7 +758,7 @@
             }
         }
     </script>
-    <script src="login.js"></script>
+    <script src="index.js"></script>
 </body>
 
 </html>

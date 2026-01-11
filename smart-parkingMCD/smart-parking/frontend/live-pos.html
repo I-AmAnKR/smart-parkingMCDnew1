@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>`r`n    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live POS - Anti-QR Swap System</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <link rel="stylesheet" href="attendance-modal.css">
+    <style>
+        .qr-alert-banner {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .qr-alert-banner h3 {
+            color: white;
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+        }
+
+        .pos-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1a5490;
+            font-weight: 600;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            outline: none;
+            border-color: #ffa500;
+        }
+
+        .btn-generate-qr {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-generate-qr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-generate-qr:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .qr-display-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+
+        .qr-header {
+            background: linear-gradient(135deg, #1a5490 0%, #2d6ba8 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .qr-canvas-wrapper {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px auto;
+            border: 3px dashed #1a5490;
+            max-width: 210px;
+            text-align: center;
+        }
+
+        #qrCanvas {
+            width: 180px !important;
+            height: 180px !important;
+            max-width: 180px !important;
+            max-height: 180px !important;
+            display: inline-block !important;
+        }
+
+        .transaction-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .transaction-item {
+            padding: 8px 0;
+        }
+
+        .transaction-item strong {
+            color: #1a5490;
+            font-size: 0.85rem;
+        }
+
+        .expiry-timer {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .security-badge {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-action {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .btn-print {
+            background: #1a5490;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #0d3a6b;
+        }
+
+        .btn-reset {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #545b62;
+        }
+
+        .transaction-list-item {
+            background: white;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .transaction-list-item:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .how-it-works-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .how-step {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Indian Flag Strip -->
+    <div class="indian-flag-strip">
+        <div class="flag-saffron"></div>
+        <div class="flag-white"></div>
+        <div class="flag-green"></div>
+    </div>
+
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="contractor.html" class="mcd-logo-link" title="Back to Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">Live POS - Anti-QR Swap System</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="contractor.html" class="nav-item">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="live-pos.html" class="nav-item active">
+                <span class="nav-text">Live POS</span>
+            </a>
+            <a href="contractor.html#recent-activity" class="nav-item">
+                <span class="nav-text">Recent Activity</span>
+            </a>
+            <a href="contractor.html#vehicle-management" class="nav-item">
+                <span class="nav-text">Vehicle Management</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Anti-QR Swap Alert Banner -->
+        <div class="qr-alert-banner">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z" fill="white"
+                            opacity="0.9" />
+                        <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="#ffa500" />
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <h3>🔒 Anti-QR Swap System Active</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9rem; opacity: 0.95;">
+                        <strong>The Problem:</strong> Contractors paste personal PhonePe/Paytm QR stickers over official
+                        MCD codes. Money goes to "Vinod Kumar" instead of MCD!<br>
+                        <strong>The Solution:</strong> Dynamic QR codes generated fresh for each transaction -
+                        impossible
+                        to fake with stickers.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live POS Interface -->
+        <div class="card"
+            style="background: linear-gradient(135deg, #1a5490 0%, #2d6ba8 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(26, 84, 144, 0.3);">
+            <h3
+                style="color: white; margin-bottom: 15px; font-size: 1.2rem; font-weight: 700; border-bottom: 3px solid #ffa500; padding-bottom: 8px;">
+                🎫 Issue Parking Ticket with Dynamic QR
+            </h3>
+
+            <!-- Vehicle Entry Form -->
+            <div
+                style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="pos-form-grid">
+                    <div class="form-field">
+                        <label>Vehicle Number</label>
+                        <input type="text" id="vehicleNumber" placeholder="DL-01-AB-1234">
+                    </div>
+                    <div class="form-field">
+                        <label>Vehicle Type</label>
+                        <select id="vehicleType">
+                            <option value="2-wheeler">2-Wheeler (₹10/hr)</option>
+                            <option value="4-wheeler" selected>4-Wheeler (₹20/hr)</option>
+                            <option value="commercial">Commercial (₹30/hr)</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Parking Duration (hours)</label>
+                        <input type="number" id="parkingDuration" value="2" min="1" max="24">
+                    </div>
+                    <div class="form-field">
+                        <label>Amount to Pay</label>
+                        <input type="text" id="amountToPay" value="₹40" readonly
+                            style="background: rgba(255,255,255,0.5); font-weight: 700; color: #28a745;">
+                    </div>
+                </div>
+
+                <button onclick="generateDynamicQR()" id="generateQRBtn" class="btn-generate-qr">
+                    🎫 Generate Dynamic QR Code
+                </button>
+            </div>
+
+            <!-- Dynamic QR Code Display -->
+            <div id="qrCodeDisplay" style="display: none;" class="qr-display-container">
+                <div class="qr-header">
+                    <h4 style="margin: 0 0 5px 0; font-size: 1.1rem; font-weight: 700;">MCD Official Payment QR</h4>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Scan to Pay - Valid for 5 minutes only</p>
+                </div>
+
+                <div class="qr-canvas-wrapper">
+                    <canvas id="qrCanvas" width="180" height="180" style="display: block; margin: 0 auto;"></canvas>
+                </div>
+
+                <div class="expiry-timer">
+                    ⏱️ Valid for: <span id="qrExpiry" style="color: #28a745;">5:00</span>
+                </div>
+
+                <div class="transaction-grid">
+                    <div class="transaction-item">
+                        <strong>Ticket ID:</strong><br>
+                        <span id="ticketId">-</span>
+                    </div>
+                    <div class="transaction-item">
+                        <strong>Vehicle:</strong><br>
+                        <span id="displayVehicleNumber">-</span>
+                    </div>
+                    <div class="transaction-item">
+                        <strong>Type:</strong><br>
+                        <span id="displayVehicleType">-</span>
+                    </div>
+                    <div class="transaction-item">
+                        <strong>Duration:</strong><br>
+                        <span id="displayDuration">-</span>
+                    </div>
+                    <div class="transaction-item">
+                        <strong>Amount:</strong><br>
+                        <span id="displayAmount" style="color: #28a745; font-weight: 700;">-</span>
+                    </div>
+                    <div class="transaction-item">
+                        <strong>UPI ID:</strong><br>
+                        <span id="upiId">-</span>
+                    </div>
+                </div>
+
+                <div class="security-badge">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z"
+                            fill="#ffc107" />
+                        <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white" />
+                    </svg>
+                    <div style="text-align: left; flex: 1; color: #856404;">
+                        <strong style="display: block; font-size: 0.85rem;">Security Features Active</strong>
+                        <span style="font-size: 0.75rem;">Encrypted • Time-Limited • Single-Use • Blockchain
+                            Verified</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button onclick="printTicket()" class="btn-action btn-print">
+                        🖨️ Print Ticket
+                    </button>
+                    <button onclick="resetPOS()" class="btn-action btn-reset">
+                        🔄 New Transaction
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent QR Transactions -->
+        <div class="card" style="margin-top: 20px;">
+            <h3
+                style="color: #1a5490; margin-bottom: 12px; font-size: 1.1rem; font-weight: 700; border-bottom: 3px solid #ffa500; padding-bottom: 6px;">
+                📋 Recent QR Transactions
+            </h3>
+            <div id="recentQRTransactions" style="max-height: 400px; overflow-y: auto;">
+                <p style="text-align: center; color: #666; padding: 20px;">No transactions yet. Generate your first
+                    dynamic QR code above.</p>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="card" style="margin-top: 20px; background: #e7f3ff; border-left: 4px solid #1a5490;">
+            <h3 style="color: #1a5490; margin-bottom: 12px; font-size: 1.1rem; font-weight: 700;">
+                ℹ️ How Anti-QR Swap System Works
+            </h3>
+            <div class="how-it-works-grid">
+                <div class="how-step">
+                    <div class="step-number" style="background: #28a745;">1</div>
+                    <h4 style="color: #1a5490; margin: 0 0 8px 0; font-size: 0.95rem;">Generate QR</h4>
+                    <p style="margin: 0; font-size: 0.85rem; color: #666; line-height: 1.4;">
+                        System creates a unique, encrypted QR code for each vehicle with embedded transaction data
+                    </p>
+                </div>
+                <div class="how-step">
+                    <div class="step-number" style="background: #ffc107;">2</div>
+                    <h4 style="color: #1a5490; margin: 0 0 8px 0; font-size: 0.95rem;">Time-Limited</h4>
+                    <p style="margin: 0; font-size: 0.85rem; color: #666; line-height: 1.4;">
+                        QR code expires in 5 minutes, preventing reuse and ensuring fresh codes for each transaction
+                    </p>
+                </div>
+                <div class="how-step">
+                    <div class="step-number" style="background: #dc3545;">3</div>
+                    <h4 style="color: #1a5490; margin: 0 0 8px 0; font-size: 0.95rem;">Verified Payment</h4>
+                    <p style="margin: 0; font-size: 0.85rem; color: #666; line-height: 1.4;">
+                        Payment goes directly to MCD account - impossible to redirect to personal accounts
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mcd-footer">
+        <div class="footer-bottom">
+            <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
+            <p>Smart Parking Management System | Designed & Developed for MCD Hackathon</p>
+        </div>
+    </footer>
+
+    <script src="attendance-modal.js"></script>
+    <script src="live-pos.js"></script>
+</body>
+
+</html>

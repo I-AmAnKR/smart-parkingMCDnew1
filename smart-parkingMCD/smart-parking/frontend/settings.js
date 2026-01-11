@@ -1,13 +1,13 @@
 // settings.js
 // System Settings Page JavaScript
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 
 // Check authentication
 if (!token || user.role !== 'admin') {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 }
 
 // Set user email in header
@@ -17,7 +17,7 @@ document.getElementById('userEmail').textContent = user.email;
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 }
 
 // Load saved settings from localStorage

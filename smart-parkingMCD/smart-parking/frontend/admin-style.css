@@ -71,6 +71,71 @@ body {
 }
 
 
+
+/* Indian Flag Strip - Top of all pages */
+.indian-flag-strip {
+    height: 4px;
+    display: flex;
+    width: 100%;
+    position: relative;
+    z-index: 1000;
+    margin: 0;
+    padding: 0;
+}
+
+.flag-saffron {
+    flex: 1;
+    background: #FF9933;
+    animation: flagWave 3s ease-in-out infinite;
+}
+
+.flag-white {
+    flex: 1;
+    background: #FFFFFF;
+    position: relative;
+    animation: flagWave 3s ease-in-out infinite 0.1s;
+}
+
+.flag-green {
+    flex: 1;
+    background: #138808;
+    animation: flagWave 3s ease-in-out infinite 0.2s;
+}
+
+@keyframes flagWave {
+
+    0%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(1.1);
+    }
+}
+
+/* Ashoka Chakra in center of white strip */
+.flag-white::after {
+    content: '☸';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000080;
+    font-size: 3px;
+    animation: chakraSpin 10s linear infinite;
+}
+
+@keyframes chakraSpin {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
 /* MCD Government Header for Admin */
 .mcd-header {
     background: #ffffff;

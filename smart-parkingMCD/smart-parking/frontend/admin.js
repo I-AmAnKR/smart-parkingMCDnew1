@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 let occupancyChart = null;
@@ -6,7 +6,7 @@ let violationsChart = null;
 
 // Check authentication
 if (!token || user.role !== 'admin') {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 }
 
 document.getElementById('userEmail').textContent = user.email;
@@ -617,5 +617,5 @@ loadNotifications();
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 }

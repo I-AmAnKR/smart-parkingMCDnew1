@@ -1,10 +1,36 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 
 // Check authentication
 if (!token || user.role !== 'contractor') {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
+}
+
+// Check if attendance is marked for today
+function checkTodayAttendance() {
+    const attendanceRecords = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+    const userEmail = user.email;
+
+    // Get today's date (start of day)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if there's an attendance record for today
+    const todayAttendance = attendanceRecords.find(record => {
+        const recordDate = new Date(record.timestamp);
+        recordDate.setHours(0, 0, 0, 0);
+        return record.staffEmail === userEmail && recordDate.getTime() === today.getTime();
+    });
+
+    return todayAttendance;
+}
+
+// Enforce attendance check
+const hasAttendance = checkTodayAttendance();
+if (!hasAttendance) {
+    showAttendanceRequiredModal();
+    throw new Error('Attendance required'); // Stop execution
 }
 
 // Initialize page
@@ -339,140 +365,6 @@ async function loadRecentLogs() {
     }
 }
 
-async function logEntry() {
-    const entryBtn = document.getElementById('entryBtn');
-    const actionMessage = document.getElementById('actionMessage');
-    const vehicleType = document.getElementById('vehicleType').value;
-    const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
-
-    if (!vehicleNumber) {
-        actionMessage.style.background = '#fff3cd';
-        actionMessage.style.color = '#856404';
-        actionMessage.style.border = '1px solid #ffc107';
-        actionMessage.textContent = 'Please enter vehicle number';
-        actionMessage.style.display = 'block';
-        return;
-    }
-
-    entryBtn.disabled = true;
-    entryBtn.innerHTML = 'Processing...';
-    actionMessage.style.display = 'none';
-
-    try {
-        const response = await fetch(`${API_URL}/parking/entry`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ vehicleType, vehicleNumber })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            actionMessage.style.background = '#d4edda';
-            actionMessage.style.color = '#155724';
-            actionMessage.style.border = '1px solid #c3e6cb';
-            actionMessage.textContent = `Vehicle ${vehicleNumber} entry logged successfully`;
-
-            if (result.data.isViolation) {
-                actionMessage.style.background = '#fff3cd';
-                actionMessage.style.color = '#856404';
-                actionMessage.style.border = '1px solid #ffc107';
-                actionMessage.textContent = `WARNING: Capacity exceeded by ${result.data.violationAmount} vehicles!`;
-            }
-
-            // Clear form
-            document.getElementById('vehicleNumber').value = '';
-        } else {
-            actionMessage.style.background = '#f8d7da';
-            actionMessage.style.color = '#721c24';
-            actionMessage.style.border = '1px solid #f5c6cb';
-            actionMessage.textContent = result.message;
-        }
-
-        actionMessage.style.display = 'block';
-        loadStatus();
-        loadRecentLogs();
-    } catch (error) {
-        actionMessage.style.background = '#f8d7da';
-        actionMessage.style.color = '#721c24';
-        actionMessage.style.border = '1px solid #f5c6cb';
-        actionMessage.textContent = 'Failed to log entry';
-        actionMessage.style.display = 'block';
-    } finally {
-        entryBtn.disabled = false;
-        entryBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
-            Vehicle Entry
-        `;
-    }
-}
-
-async function logExit() {
-    const exitBtn = document.getElementById('exitBtn');
-    const actionMessage = document.getElementById('actionMessage');
-    const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
-
-    exitBtn.disabled = true;
-    exitBtn.innerHTML = 'Processing...';
-    actionMessage.style.display = 'none';
-
-    try {
-        const response = await fetch(`${API_URL}/parking/exit`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ vehicleNumber })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            actionMessage.style.background = '#d4edda';
-            actionMessage.style.color = '#155724';
-            actionMessage.style.border = '1px solid #c3e6cb';
-
-            let message = 'Vehicle exit logged successfully';
-            if (result.data.fee > 0) {
-                message += ` | Fee: ₹${result.data.fee} | Duration: ${result.data.duration} mins`;
-            }
-            actionMessage.textContent = message;
-
-            // Clear form
-            document.getElementById('vehicleNumber').value = '';
-        } else {
-            actionMessage.style.background = '#f8d7da';
-            actionMessage.style.color = '#721c24';
-            actionMessage.style.border = '1px solid #f5c6cb';
-            actionMessage.textContent = result.message;
-        }
-
-        actionMessage.style.display = 'block';
-        loadStatus();
-        loadRecentLogs();
-    } catch (error) {
-        actionMessage.style.background = '#f8d7da';
-        actionMessage.style.color = '#721c24';
-        actionMessage.style.border = '1px solid #f5c6cb';
-        actionMessage.textContent = 'Failed to log exit';
-        actionMessage.style.display = 'block';
-    } finally {
-        exitBtn.disabled = false;
-        exitBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 12H19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
-            Vehicle Exit
-        `;
-    }
-}
-
 
 // Notifications functionality
 let notificationsOpen = false;
@@ -592,5 +484,6 @@ loadNotifications();
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
 }
+
