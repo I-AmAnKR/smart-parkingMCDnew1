@@ -1,154 +1,7 @@
-// Mock data for demonstration
-let contractors = [
-    {
-        id: 1,
-        email: 'contractor1@parking.com',
-        parkingLotName: 'Connaught Place Parking',
-        parkingLotId: 'CP-001',
-        maxCapacity: 150,
-        currentOccupancy: 142,
-        violationCount: 5,
-        warnings: 1,
-        status: 'active',
-        createdAt: '2025-12-01',
-        recentActivity: 247,
-        notes: [
-            {
-                type: 'warning',
-                reason: 'Exceeded capacity multiple times',
-                message: 'Warning issued. Total warnings: 1',
-                timestamp: '2026-01-05T10:30:00',
-                performedBy: 'admin@mcd.gov.in'
-            }
-        ]
-    },
-    {
-        id: 2,
-        email: 'contractor2@parking.com',
-        parkingLotName: 'Karol Bagh Parking Zone',
-        parkingLotId: 'KB-002',
-        maxCapacity: 200,
-        currentOccupancy: 185,
-        violationCount: 2,
-        warnings: 0,
-        status: 'active',
-        createdAt: '2025-11-15',
-        recentActivity: 312,
-        notes: []
-    },
-    {
-        id: 3,
-        email: 'contractor3@parking.com',
-        parkingLotName: 'Nehru Place Complex',
-        parkingLotId: 'NP-003',
-        maxCapacity: 180,
-        currentOccupancy: 195,
-        violationCount: 12,
-        warnings: 3,
-        status: 'suspended',
-        createdAt: '2025-10-20',
-        recentActivity: 156,
-        suspendedUntil: '2026-01-20',
-        notes: [
-            {
-                type: 'warning',
-                reason: 'Capacity violations',
-                message: 'Warning issued. Total warnings: 1',
-                timestamp: '2025-12-10T14:20:00',
-                performedBy: 'admin@mcd.gov.in'
-            },
-            {
-                type: 'warning',
-                reason: 'Repeated violations',
-                message: 'Warning issued. Total warnings: 2',
-                timestamp: '2025-12-20T09:15:00',
-                performedBy: 'admin@mcd.gov.in'
-            },
-            {
-                type: 'suspend',
-                reason: 'Multiple capacity violations despite warnings',
-                message: 'Suspended for 10 days',
-                timestamp: '2026-01-10T11:00:00',
-                performedBy: 'admin@mcd.gov.in'
-            }
-        ]
-    },
-    {
-        id: 4,
-        email: 'contractor4@parking.com',
-        parkingLotName: 'Saket Metro Parking',
-        parkingLotId: 'SM-004',
-        maxCapacity: 120,
-        currentOccupancy: 98,
-        violationCount: 0,
-        warnings: 0,
-        status: 'active',
-        createdAt: '2025-12-10',
-        recentActivity: 189,
-        notes: []
-    },
-    {
-        id: 5,
-        email: 'contractor5@parking.com',
-        parkingLotName: 'Rajiv Chowk Underground',
-        parkingLotId: 'RC-005',
-        maxCapacity: 250,
-        currentOccupancy: 230,
-        violationCount: 1,
-        warnings: 0,
-        status: 'active',
-        createdAt: '2025-11-01',
-        recentActivity: 421,
-        notes: []
-    }
-];
+// contractor-management.js
+// Contractor Management Page - Real API Integration
 
-// Generate mock activity logs
-function generateMockActivity(contractorId, count = 50) {
-    const activities = [];
-    const contractor = contractors.find(c => c.id === contractorId);
-    if (!contractor) return [];
-
-    for (let i = 0; i < count; i++) {
-        const isEntry = Math.random() > 0.5;
-        const timestamp = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-        const occupancy = Math.floor(Math.random() * (contractor.maxCapacity + 20));
-        const isViolation = occupancy > contractor.maxCapacity;
-
-        activities.push({
-            action: isEntry ? 'entry' : 'exit',
-            timestamp: timestamp.toISOString(),
-            currentOccupancy: occupancy,
-            maxCapacity: contractor.maxCapacity,
-            isViolation
-        });
-    }
-
-    return activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-}
-
-// Generate mock violations
-function generateMockViolations(contractorId, count) {
-    const violations = [];
-    const contractor = contractors.find(c => c.id === contractorId);
-    if (!contractor) return [];
-
-    for (let i = 0; i < count; i++) {
-        const timestamp = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000);
-        const overcapacity = Math.floor(Math.random() * 20) + 1;
-
-        violations.push({
-            timestamp: timestamp.toISOString(),
-            currentOccupancy: contractor.maxCapacity + overcapacity,
-            maxCapacity: contractor.maxCapacity,
-            violationAmount: overcapacity
-        });
-    }
-
-    return violations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-}
-
-// Authentication check
+const API_URL = 'http://localhost:5000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -158,25 +11,41 @@ if (!token || user.role !== 'admin') {
 
 document.getElementById('userEmail').textContent = user.email;
 
-// Current contractor being edited/actioned
 let currentContractorId = null;
 
 // Load contractors on page load
 loadContractors();
 
-function loadContractors() {
-    displayContractors(contractors);
+async function loadContractors() {
+    try {
+        const response = await fetch(`${API_URL}/contractors`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            displayContractors(data.contractors);
+        } else {
+            console.error('Failed to load contractors:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading contractors:', error);
+        document.getElementById('contractorsGrid').innerHTML =
+            '<p class="text-muted">Error loading contractors. Please try again.</p>';
+    }
 }
 
-function displayContractors(contractorsList) {
+function displayContractors(contractors) {
     const grid = document.getElementById('contractorsGrid');
 
-    if (contractorsList.length === 0) {
+    if (contractors.length === 0) {
         grid.innerHTML = '<p class="text-muted">No contractors found.</p>';
         return;
     }
 
-    const html = contractorsList.map(contractor => {
+    const html = contractors.map(contractor => {
         const utilization = Math.round((contractor.currentOccupancy / contractor.maxCapacity) * 100);
         const statusClass = `status-${contractor.status}`;
         const warningClass = contractor.warnings > 2 ? 'high-warnings' : '';
@@ -211,9 +80,9 @@ function displayContractors(contractorsList) {
                 </div>
                 
                 <div class="contractor-actions">
-                    <button onclick="viewDetails(${contractor.id})" class="btn btn-sm btn-primary">View Details</button>
-                    <button onclick="editContractor(${contractor.id})" class="btn btn-sm btn-secondary">Edit</button>
-                    <button onclick="openActionModal(${contractor.id})" class="btn btn-sm btn-warning">Take Action</button>
+                    <button onclick="viewDetails('${contractor._id}')" class="btn btn-sm btn-primary">View Details</button>
+                    <button onclick="editContractor('${contractor._id}')" class="btn btn-sm btn-secondary">Edit</button>
+                    <button onclick="openActionModal('${contractor._id}')" class="btn btn-sm btn-warning">Take Action</button>
                 </div>
             </div>
         `;
@@ -222,145 +91,247 @@ function displayContractors(contractorsList) {
     grid.innerHTML = html;
 }
 
-function viewDetails(contractorId) {
-    const contractor = contractors.find(c => c.id === contractorId);
-    if (!contractor) return;
+async function viewDetails(contractorId) {
+    try {
+        const response = await fetch(`${API_URL}/contractors/${contractorId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-    const activities = generateMockActivity(contractorId, 50);
-    const violations = generateMockViolations(contractorId, contractor.violationCount);
-    const utilization = Math.round((contractor.currentOccupancy / contractor.maxCapacity) * 100);
+        const data = await response.json();
+        if (!data.success) {
+            alert('Failed to load contractor details');
+            return;
+        }
 
-    const html = `
-        <div class="detail-section">
-            <h3>Basic Information</h3>
-            <div class="detail-grid">
-                <div class="detail-item">
-                    <strong>Email:</strong>
-                    <span>${contractor.email}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Parking Lot:</strong>
-                    <span>${contractor.parkingLotName}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Lot ID:</strong>
-                    <span>${contractor.parkingLotId}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Max Capacity:</strong>
-                    <span>${contractor.maxCapacity}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Current Occupancy:</strong>
-                    <span>${contractor.currentOccupancy}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Status:</strong>
-                    <span class="contractor-status status-${contractor.status}">${contractor.status.toUpperCase()}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Warnings:</strong>
-                    <span class="${contractor.warnings > 0 ? 'text-warning' : ''}">${contractor.warnings}</span>
-                </div>
-                <div class="detail-item">
-                    <strong>Joined:</strong>
-                    <span>${new Date(contractor.createdAt).toLocaleDateString()}</span>
-                </div>
-            </div>
-        </div>
+        const contractor = data.contractor;
+        const stats = data.stats;
+        const logs = data.logs;
+        const violations = data.violations;
+        const activityByDate = data.activityByDate;
 
-        <div class="detail-section">
-            <h3>Statistics</h3>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">${contractor.violationCount}</div>
-                    <div class="stat-label">Total Violations</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${contractor.recentActivity}</div>
-                    <div class="stat-label">Recent Activities</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${utilization}%</div>
-                    <div class="stat-label">Avg Utilization</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="detail-section">
-            <h3>Recent Violations (${violations.length})</h3>
-            <div class="violations-list">
-                ${violations.length > 0 ? violations.map(v => `
-                    <div class="violation-item">
-                        <span>${new Date(v.timestamp).toLocaleString()}</span>
-                        <span class="text-danger">+${v.violationAmount} over capacity</span>
-                        <span>${v.currentOccupancy}/${v.maxCapacity}</span>
-                    </div>
-                `).join('') : '<p class="text-muted">No violations found.</p>'}
-            </div>
-        </div>
-
-        <div class="detail-section">
-            <h3>Recent Activity (Last 50)</h3>
-            <div class="activity-list">
-                ${activities.map(log => `
-                    <div class="activity-item ${log.isViolation ? 'violation' : ''}">
-                        <span>${new Date(log.timestamp).toLocaleString()}</span>
-                        <span>${log.action === 'entry' ? '➕ Entry' : '➖ Exit'}</span>
-                        <span>${log.currentOccupancy}/${log.maxCapacity}</span>
-                        ${log.isViolation ? '<span class="text-danger">⚠️ VIOLATION</span>' : ''}
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-
-        ${contractor.notes && contractor.notes.length > 0 ? `
+        const html = `
             <div class="detail-section">
-                <h3>Admin Actions & Notes</h3>
-                ${contractor.notes.slice().reverse().map(note => `
-                    <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #ffa500;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <strong style="color: #1a5490;">${note.type.toUpperCase()}</strong>
-                            <span style="color: #666; font-size: 0.85rem;">${new Date(note.timestamp).toLocaleString()}</span>
-                        </div>
-                        <p style="margin: 5px 0;">${note.message}</p>
-                        <p style="margin: 5px 0; font-style: italic; color: #666;"><em>Reason: ${note.reason}</em></p>
-                        <p style="margin: 5px 0; font-size: 0.85rem; color: #888;">By: ${note.performedBy}</p>
+                <h3>Basic Information</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <strong>Email:</strong>
+                        <span>${contractor.email}</span>
                     </div>
-                `).join('')}
+                    <div class="detail-item">
+                        <strong>Parking Lot:</strong>
+                        <span>${contractor.parkingLotName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Lot ID:</strong>
+                        <span>${contractor.parkingLotId}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Max Capacity:</strong>
+                        <span>${contractor.maxCapacity}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Current Occupancy:</strong>
+                        <span>${stats.currentOccupancy}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status:</strong>
+                        <span class="contractor-status status-${contractor.status}">${contractor.status.toUpperCase()}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Warnings:</strong>
+                        <span class="${contractor.warnings > 0 ? 'text-warning' : ''}">${contractor.warnings}</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Joined:</strong>
+                        <span>${new Date(contractor.createdAt).toLocaleDateString()}</span>
+                    </div>
+                </div>
             </div>
-        ` : ''}
-    `;
 
-    document.getElementById('detailsBody').innerHTML = html;
-    document.getElementById('detailsModal').style.display = 'block';
+            <div class="detail-section">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.totalViolations}</div>
+                        <div class="stat-label">Total Violations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.recentActivity}</div>
+                        <div class="stat-label">Recent Activities (7d)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.utilizationRate}%</div>
+                        <div class="stat-label">Utilization Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Activity Chart (Last 7 Days)</h3>
+                <canvas id="activityChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <div class="detail-section">
+                <h3>Recent Violations (${violations.length})</h3>
+                <div class="violations-list">
+                    ${violations.length > 0 ? violations.map(v => `
+                        <div class="violation-item">
+                            <span>${new Date(v.timestamp).toLocaleString()}</span>
+                            <span class="text-danger">Capacity exceeded</span>
+                            <span>${v.currentOccupancy}/${v.maxCapacity}</span>
+                        </div>
+                    `).join('') : '<p class="text-muted">No violations found.</p>'}
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Recent Activity (Last 50)</h3>
+                <div class="activity-list">
+                    ${logs.map(log => `
+                        <div class="activity-item ${log.isViolation ? 'violation' : ''}">
+                            <span>${new Date(log.timestamp).toLocaleString()}</span>
+                            <span>${log.action === 'entry' ? '➕ Entry' : '➖ Exit'}</span>
+                            <span>${log.currentOccupancy}/${log.maxCapacity}</span>
+                            ${log.isViolation ? '<span class="text-danger">⚠️ VIOLATION</span>' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            ${contractor.notes && contractor.notes.length > 0 ? `
+                <div class="detail-section">
+                    <h3>Admin Actions & Notes</h3>
+                    ${contractor.notes.slice().reverse().map(note => `
+                        <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #ffa500;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <strong style="color: #1a5490;">${note.type.toUpperCase()}</strong>
+                                <span style="color: #666; font-size: 0.85rem;">${new Date(note.timestamp).toLocaleString()}</span>
+                            </div>
+                            <p style="margin: 5px 0;">${note.message}</p>
+                            <p style="margin: 5px 0; font-style: italic; color: #666;"><em>Reason: ${note.reason}</em></p>
+                            <p style="margin: 5px 0; font-size: 0.85rem; color: #888;">By: ${note.performedBy}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        `;
+
+        document.getElementById('detailsBody').innerHTML = html;
+        document.getElementById('detailsModal').style.display = 'block';
+
+        // Create activity chart
+        createActivityChart(activityByDate);
+    } catch (error) {
+        console.error('Error loading details:', error);
+        alert('Error loading contractor details');
+    }
 }
 
-function editContractor(contractorId) {
-    const contractor = contractors.find(c => c.id === contractorId);
-    if (!contractor) return;
+function createActivityChart(activityByDate) {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
 
-    currentContractorId = contractorId;
-    document.getElementById('editLotName').value = contractor.parkingLotName;
-    document.getElementById('editCapacity').value = contractor.maxCapacity;
-    document.getElementById('editStatus').value = contractor.status;
+    const dates = Object.keys(activityByDate).sort();
+    const entries = dates.map(date => activityByDate[date].entries);
+    const exits = dates.map(date => activityByDate[date].exits);
 
-    document.getElementById('editModal').style.display = 'block';
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates.map(d => new Date(d).toLocaleDateString()),
+            datasets: [
+                {
+                    label: 'Entries',
+                    data: entries,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Exits',
+                    data: exits,
+                    borderColor: '#ffa500',
+                    backgroundColor: 'rgba(255, 165, 0, 0.1)',
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 }
 
-function saveEdit(event) {
+async function editContractor(contractorId) {
+    try {
+        const response = await fetch(`${API_URL}/contractors/${contractorId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            alert('Failed to load contractor');
+            return;
+        }
+
+        const contractor = data.contractor;
+        currentContractorId = contractorId;
+
+        document.getElementById('editLotName').value = contractor.parkingLotName;
+        document.getElementById('editCapacity').value = contractor.maxCapacity;
+        document.getElementById('editStatus').value = contractor.status;
+
+        document.getElementById('editModal').style.display = 'block';
+    } catch (error) {
+        console.error('Error loading contractor for edit:', error);
+        alert('Error loading contractor');
+    }
+}
+
+async function saveEdit(event) {
     event.preventDefault();
 
-    const contractor = contractors.find(c => c.id === currentContractorId);
-    if (!contractor) return;
+    const parkingLotName = document.getElementById('editLotName').value;
+    const maxCapacity = parseInt(document.getElementById('editCapacity').value);
+    const status = document.getElementById('editStatus').value;
 
-    contractor.parkingLotName = document.getElementById('editLotName').value;
-    contractor.maxCapacity = parseInt(document.getElementById('editCapacity').value);
-    contractor.status = document.getElementById('editStatus').value;
+    try {
+        const response = await fetch(`${API_URL}/contractors/${currentContractorId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ parkingLotName, maxCapacity, status })
+        });
 
-    alert('Contractor updated successfully!');
-    closeEditModal();
-    loadContractors();
+        const data = await response.json();
+        if (data.success) {
+            alert('Contractor updated successfully!');
+            closeEditModal();
+            loadContractors();
+        } else {
+            alert('Failed to update contractor: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error updating contractor:', error);
+        alert('Error updating contractor');
+    }
 }
 
 function openActionModal(contractorId) {
@@ -375,56 +346,35 @@ function toggleDuration() {
     document.getElementById('durationGroup').style.display = actionType === 'suspend' ? 'block' : 'none';
 }
 
-function takeAction(event) {
+async function takeAction(event) {
     event.preventDefault();
-
-    const contractor = contractors.find(c => c.id === currentContractorId);
-    if (!contractor) return;
 
     const actionType = document.getElementById('actionType').value;
     const reason = document.getElementById('actionReason').value;
     const duration = document.getElementById('actionDuration').value;
 
-    const action = {
-        type: actionType,
-        reason,
-        timestamp: new Date().toISOString(),
-        performedBy: user.email
-    };
+    try {
+        const response = await fetch(`${API_URL}/contractors/${currentContractorId}/action`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ actionType, reason, duration })
+        });
 
-    switch (actionType) {
-        case 'warning':
-            contractor.warnings += 1;
-            action.message = `Warning issued. Total warnings: ${contractor.warnings}`;
-            break;
-        case 'suspend':
-            contractor.status = 'suspended';
-            if (duration) {
-                const suspendDate = new Date();
-                suspendDate.setDate(suspendDate.getDate() + parseInt(duration));
-                contractor.suspendedUntil = suspendDate.toISOString();
-                action.message = `Suspended for ${duration} days`;
-            } else {
-                action.message = 'Suspended indefinitely';
-            }
-            break;
-        case 'activate':
-            contractor.status = 'active';
-            contractor.suspendedUntil = null;
-            action.message = 'Account activated';
-            break;
-        case 'reset':
-            contractor.warnings = 0;
-            action.message = 'Warnings reset to 0';
-            break;
+        const data = await response.json();
+        if (data.success) {
+            alert(data.message);
+            closeActionModal();
+            loadContractors();
+        } else {
+            alert('Failed to take action: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error taking action:', error);
+        alert('Error taking action');
     }
-
-    if (!contractor.notes) contractor.notes = [];
-    contractor.notes.push(action);
-
-    alert(action.message);
-    closeActionModal();
-    loadContractors();
 }
 
 function closeDetailsModal() {

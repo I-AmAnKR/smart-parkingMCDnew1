@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -15,12 +15,51 @@ document.getElementById('maxCapacity').textContent = user.maxCapacity || 0;
 // Load initial status
 loadStatus();
 loadRecentLogs();
+loadContractorStats();
 
 // Auto-refresh every 10 seconds
 setInterval(() => {
     loadStatus();
     loadRecentLogs();
+    loadContractorStats();
 }, 10000);
+
+// Load contractor statistics
+async function loadContractorStats() {
+    try {
+        const { parkingLotId } = user;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get today's logs
+        const response = await fetch(`${API_URL}/parking/logs`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            const logs = result.data;
+
+            // Filter today's logs
+            const todayLogs = logs.filter(log => new Date(log.timestamp) >= today);
+
+            // Count entries and exits
+            const entries = todayLogs.filter(log => log.action === 'entry').length;
+            const exits = todayLogs.filter(log => log.action === 'exit').length;
+
+            // Get current occupancy from latest log
+            const latestLog = logs[0];
+            const currentOccupancy = latestLog ? latestLog.currentOccupancy : 0;
+
+            // Update stat boxes
+            document.getElementById('todayEntries').textContent = entries;
+            document.getElementById('todayExits').textContent = exits;
+            document.getElementById('currentOccupancyStat').textContent = currentOccupancy;
+        }
+    } catch (error) {
+        console.error('Error loading contractor stats:', error);
+    }
+}
 
 
 // ========== SHIFT TIMER FUNCTIONALITY ==========
@@ -303,6 +342,17 @@ async function loadRecentLogs() {
 async function logEntry() {
     const entryBtn = document.getElementById('entryBtn');
     const actionMessage = document.getElementById('actionMessage');
+    const vehicleType = document.getElementById('vehicleType').value;
+    const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
+
+    if (!vehicleNumber) {
+        actionMessage.style.background = '#fff3cd';
+        actionMessage.style.color = '#856404';
+        actionMessage.style.border = '1px solid #ffc107';
+        actionMessage.textContent = 'Please enter vehicle number';
+        actionMessage.style.display = 'block';
+        return;
+    }
 
     entryBtn.disabled = true;
     entryBtn.innerHTML = 'Processing...';
@@ -314,7 +364,8 @@ async function logEntry() {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ vehicleType, vehicleNumber })
         });
 
         const result = await response.json();
@@ -323,7 +374,7 @@ async function logEntry() {
             actionMessage.style.background = '#d4edda';
             actionMessage.style.color = '#155724';
             actionMessage.style.border = '1px solid #c3e6cb';
-            actionMessage.textContent = 'Vehicle entry logged successfully';
+            actionMessage.textContent = `Vehicle ${vehicleNumber} entry logged successfully`;
 
             if (result.data.isViolation) {
                 actionMessage.style.background = '#fff3cd';
@@ -331,6 +382,9 @@ async function logEntry() {
                 actionMessage.style.border = '1px solid #ffc107';
                 actionMessage.textContent = `WARNING: Capacity exceeded by ${result.data.violationAmount} vehicles!`;
             }
+
+            // Clear form
+            document.getElementById('vehicleNumber').value = '';
         } else {
             actionMessage.style.background = '#f8d7da';
             actionMessage.style.color = '#721c24';
@@ -361,6 +415,7 @@ async function logEntry() {
 async function logExit() {
     const exitBtn = document.getElementById('exitBtn');
     const actionMessage = document.getElementById('actionMessage');
+    const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
 
     exitBtn.disabled = true;
     exitBtn.innerHTML = 'Processing...';
@@ -372,7 +427,8 @@ async function logExit() {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ vehicleNumber })
         });
 
         const result = await response.json();
@@ -381,7 +437,15 @@ async function logExit() {
             actionMessage.style.background = '#d4edda';
             actionMessage.style.color = '#155724';
             actionMessage.style.border = '1px solid #c3e6cb';
-            actionMessage.textContent = 'Vehicle exit logged successfully';
+
+            let message = 'Vehicle exit logged successfully';
+            if (result.data.fee > 0) {
+                message += ` | Fee: ₹${result.data.fee} | Duration: ${result.data.duration} mins`;
+            }
+            actionMessage.textContent = message;
+
+            // Clear form
+            document.getElementById('vehicleNumber').value = '';
         } else {
             actionMessage.style.background = '#f8d7da';
             actionMessage.style.color = '#721c24';
@@ -408,6 +472,122 @@ async function logExit() {
         `;
     }
 }
+
+
+// Notifications functionality
+let notificationsOpen = false;
+
+async function loadNotifications() {
+    try {
+        const response = await fetch(`${API_URL}/notifications`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            displayNotifications(data.notifications);
+            updateNotificationBadge(data.unreadCount);
+
+            // Show alert for critical notifications
+            const unreadCritical = data.notifications.filter(n => !n.read && (n.type === 'warning' || n.type === 'error'));
+            if (unreadCritical.length > 0 && !sessionStorage.getItem('notificationAlertShown')) {
+                const notif = unreadCritical[0];
+                alert(`${notif.title}\n\n${notif.message}`);
+                sessionStorage.setItem('notificationAlertShown', 'true');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+function displayNotifications(notifications) {
+    const list = document.getElementById('notificationsList');
+
+    if (notifications.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No notifications</p>';
+        return;
+    }
+
+    const html = notifications.map(notif => {
+        const typeColors = {
+            'warning': '#ffa500',
+            'error': '#dc3545',
+            'success': '#28a745',
+            'info': '#17a2b8'
+        };
+        const color = typeColors[notif.type] || '#1a5490';
+
+        return `
+            <div onclick="markNotificationRead('${notif._id}')" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; ${!notif.read ? 'background: #f8f9fa;' : ''}" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='${!notif.read ? '#f8f9fa' : 'white'}'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                    <strong style="color: ${color}; font-size: 0.9rem;">${notif.title}</strong>
+                    <span style="font-size: 0.75rem; color: #888;">${new Date(notif.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; color: #555;">${notif.message}</p>
+                ${!notif.read ? '<div style="margin-top: 4px;"><span style="font-size: 0.7rem; color: #1a5490; font-weight: 600;">● NEW</span></div>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    list.innerHTML = html;
+}
+
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notificationsDropdown');
+    notificationsOpen = !notificationsOpen;
+    dropdown.style.display = notificationsOpen ? 'block' : 'none';
+
+    if (notificationsOpen) {
+        loadNotifications();
+    }
+}
+
+async function markNotificationRead(notifId) {
+    try {
+        await fetch(`${API_URL}/notifications/${notifId}/read`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadNotifications();
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+async function markAllRead() {
+    try {
+        await fetch(`${API_URL}/notifications/read-all`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadNotifications();
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+    }
+}
+
+// Close notifications when clicking outside
+document.addEventListener('click', (e) => {
+    const wrapper = document.querySelector('.notifications-wrapper');
+    if (wrapper && !wrapper.contains(e.target) && notificationsOpen) {
+        toggleNotifications();
+    }
+});
+
+// Poll for new notifications every 30 seconds
+setInterval(loadNotifications, 30000);
+loadNotifications();
 
 function logout() {
     localStorage.removeItem('token');

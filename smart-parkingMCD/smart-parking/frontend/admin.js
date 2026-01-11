@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 let occupancyChart = null;
@@ -128,9 +128,37 @@ function setActiveNav(element) {
 // Load dashboard data
 loadDashboard();
 loadCharts();
+loadDashboardStats();
 
 // Auto-refresh every 15 seconds
 setInterval(loadDashboard, 15000);
+setInterval(loadDashboardStats, 30000);
+
+async function loadDashboardStats() {
+    try {
+        const response = await fetch(`${API_URL}/stats/dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            const { totalRevenue, activeViolations, vehicleCount, pendingApps } = result.data;
+
+            // Update stat boxes
+            const revenueEl = document.getElementById('totalRevenue');
+            const violationsEl = document.getElementById('activeViolations');
+            const vehicleEl = document.getElementById('vehicleCount');
+            const appsEl = document.getElementById('pendingApps');
+
+            if (revenueEl) revenueEl.textContent = `₹${totalRevenue.toLocaleString()}`;
+            if (violationsEl) violationsEl.textContent = activeViolations;
+            if (vehicleEl) vehicleEl.textContent = vehicleCount;
+            if (appsEl) appsEl.textContent = pendingApps;
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
 
 async function loadDashboard() {
     try {
@@ -140,12 +168,7 @@ async function loadDashboard() {
 
         const result = await response.json();
         if (result.success) {
-            const { parkingLots, totalLots, violatingLots, recentViolations } = result.data;
-
-            // Update stats
-            document.getElementById('totalLots').textContent = totalLots;
-            document.getElementById('violatingLots').textContent = violatingLots;
-            document.getElementById('recentViolations').textContent = recentViolations.length;
+            const { parkingLots, recentViolations } = result.data;
 
             // Display parking lots
             displayParkingLots(parkingLots);
@@ -158,31 +181,95 @@ async function loadDashboard() {
     }
 }
 
+let allParkingLots = [];
+let currentFilter = 'all';
+
 function displayParkingLots(lots) {
-    const html = lots.map(lot => {
+    allParkingLots = lots;
+    filterParkingLots(currentFilter);
+}
+
+function filterParkingLots(filter) {
+    currentFilter = filter;
+
+    // Update button styles
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.style.background = 'white';
+        btn.style.color = btn.id === 'filterLive' ? '#28a745' : btn.id === 'filterOffline' ? '#6c757d' : '#1a5490';
+    });
+
+    const activeBtn = document.getElementById(filter === 'all' ? 'filterAll' : filter === 'live' ? 'filterLive' : 'filterOffline');
+    if (activeBtn) {
+        activeBtn.style.background = filter === 'live' ? '#28a745' : filter === 'offline' ? '#6c757d' : '#1a5490';
+        activeBtn.style.color = 'white';
+    }
+
+    // Filter lots based on shift status (for now, we'll use a simple heuristic)
+    let filteredLots = allParkingLots;
+    if (filter === 'live') {
+        // Consider lots with recent activity as "live"
+        filteredLots = allParkingLots.filter(lot => lot.currentOccupancy > 0 || lot.utilizationPercent > 0);
+    } else if (filter === 'offline') {
+        filteredLots = allParkingLots.filter(lot => lot.currentOccupancy === 0 && lot.utilizationPercent === 0);
+    }
+
+    const html = filteredLots.map(lot => {
         const statusClass = lot.isViolating ? 'lot-violating' :
             lot.utilizationPercent >= 90 ? 'lot-warning' : 'lot-normal';
 
+        const isLive = lot.currentOccupancy > 0 || lot.utilizationPercent > 0;
+        const statusBadge = isLive ?
+            '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">🟢 LIVE</span>' :
+            '<span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">⚫ OFFLINE</span>';
+
         return `
-            <div class="parking-lot-card ${statusClass}">
-                <div class="lot-header">
-                    <h4>${lot.parkingLotName}</h4>
-                    <span class="lot-id">${lot.parkingLotId}</span>
+            <div class="parking-lot-card ${statusClass}" onclick="openContractorDetails('${lot.parkingLotId}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';">
+                <div class="lot-header" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0;">${lot.parkingLotName}</h4>
+                        <span class="lot-id" style="font-size: 0.8rem; color: #666;">${lot.parkingLotId}</span>
+                    </div>
+                    ${statusBadge}
                 </div>
                 <div class="lot-occupancy">
-                    <div class="occupancy-bar">
-                        <div class="occupancy-fill" style="width: ${Math.min(lot.utilizationPercent, 100)}%"></div>
+                    <div class="occupancy-bar" style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                        <div class="occupancy-fill" style="width: ${Math.min(lot.utilizationPercent, 100)}%; height: 100%; background: ${lot.isViolating ? '#dc3545' : lot.utilizationPercent >= 90 ? '#ffc107' : '#28a745'}; transition: width 0.3s;"></div>
                     </div>
-                    <div class="occupancy-text">
-                        ${lot.currentOccupancy} / ${lot.maxCapacity} (${lot.utilizationPercent}%)
+                    <div class="occupancy-text" style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                        <span><strong>${lot.currentOccupancy}</strong> / ${lot.maxCapacity}</span>
+                        <span><strong>${lot.utilizationPercent}%</strong></span>
                     </div>
                 </div>
-                ${lot.isViolating ? '<div class="lot-alert">⚠️ Over Capacity</div>' : ''}
+                ${lot.isViolating ? '<div class="lot-alert" style="margin-top: 10px; padding: 8px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 0.85rem; color: #856404;">⚠️ Over Capacity</div>' : ''}
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0; font-size: 0.85rem; color: #666;">
+                    Click to view contractor details
+                </div>
             </div>
         `;
     }).join('');
 
     document.getElementById('parkingLotsGrid').innerHTML = html || '<p class="text-muted">No parking lots found</p>';
+}
+
+async function openContractorDetails(parkingLotId) {
+    try {
+        // Find contractor by parking lot ID
+        const response = await fetch(`${API_URL}/contractors`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            const contractor = result.contractors.find(c => c.parkingLotId === parkingLotId);
+            if (contractor) {
+                // Redirect to contractor management page with the contractor selected
+                window.location.href = `contractor-management.html?id=${contractor._id}`;
+            }
+        }
+    } catch (error) {
+        console.error('Error opening contractor details:', error);
+        alert('Failed to load contractor details');
+    }
 }
 
 function displayViolations(violations) {
@@ -418,6 +505,114 @@ async function verifyIntegrity() {
         btn.textContent = 'Verify Now';
     }
 }
+
+
+// Notifications functionality
+let notificationsOpen = false;
+
+async function loadNotifications() {
+    try {
+        const response = await fetch(`${API_URL}/notifications`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            displayNotifications(data.notifications);
+            updateNotificationBadge(data.unreadCount);
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+function displayNotifications(notifications) {
+    const list = document.getElementById('notificationsList');
+
+    if (notifications.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No notifications</p>';
+        return;
+    }
+
+    const html = notifications.map(notif => {
+        const typeColors = {
+            'warning': '#ffa500',
+            'error': '#dc3545',
+            'success': '#28a745',
+            'info': '#17a2b8'
+        };
+        const color = typeColors[notif.type] || '#1a5490';
+
+        return `
+            <div onclick="markNotificationRead('${notif._id}')" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; ${!notif.read ? 'background: #f8f9fa;' : ''}" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='${!notif.read ? '#f8f9fa' : 'white'}'">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                    <strong style="color: ${color}; font-size: 0.9rem;">${notif.title}</strong>
+                    <span style="font-size: 0.75rem; color: #888;">${new Date(notif.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; color: #555;">${notif.message}</p>
+                ${!notif.read ? '<div style="margin-top: 4px;"><span style="font-size: 0.7rem; color: #1a5490; font-weight: 600;">● NEW</span></div>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    list.innerHTML = html;
+}
+
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notificationsDropdown');
+    notificationsOpen = !notificationsOpen;
+    dropdown.style.display = notificationsOpen ? 'block' : 'none';
+
+    if (notificationsOpen) {
+        loadNotifications();
+    }
+}
+
+async function markNotificationRead(notifId) {
+    try {
+        await fetch(`${API_URL}/notifications/${notifId}/read`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadNotifications();
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+async function markAllRead() {
+    try {
+        await fetch(`${API_URL}/notifications/read-all`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadNotifications();
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+    }
+}
+
+// Close notifications when clicking outside
+document.addEventListener('click', (e) => {
+    const wrapper = document.querySelector('.notifications-wrapper');
+    if (wrapper && !wrapper.contains(e.target) && notificationsOpen) {
+        toggleNotifications();
+    }
+});
+
+// Poll for new notifications every 30 seconds
+setInterval(loadNotifications, 30000);
+loadNotifications();
 
 function logout() {
     localStorage.removeItem('token');

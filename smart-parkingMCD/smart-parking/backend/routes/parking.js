@@ -18,6 +18,14 @@ const router = express.Router();
 router.post('/entry', authMiddleware, contractorOnly, async (req, res) => {
   try {
     const { parkingLotId, parkingLotName, maxCapacity } = req.user;
+    const { vehicleType, vehicleNumber } = req.body;
+
+    if (!vehicleType || !vehicleNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vehicle type and number are required'
+      });
+    }
 
     // Get current occupancy and previous log for hash chain
     const lastLog = await ParkingLog.findOne({ parkingLotId }).sort({ _id: -1 });
@@ -40,7 +48,10 @@ router.post('/entry', authMiddleware, contractorOnly, async (req, res) => {
       isViolation,
       violationAmount,
       performedBy: req.user.email,
-      previousHash
+      previousHash,
+      vehicleType,
+      vehicleNumber: vehicleNumber.toUpperCase(),
+      entryTime: new Date()
     };
 
     // Generate cryptographic hash
@@ -59,6 +70,8 @@ router.post('/entry', authMiddleware, contractorOnly, async (req, res) => {
         maxCapacity,
         isViolation,
         violationAmount,
+        vehicleType,
+        vehicleNumber: vehicleNumber.toUpperCase(),
         hash: hash.substring(0, 16) + '...'  // Show partial hash for demo
       }
     });
@@ -79,6 +92,7 @@ router.post('/entry', authMiddleware, contractorOnly, async (req, res) => {
 router.post('/exit', authMiddleware, contractorOnly, async (req, res) => {
   try {
     const { parkingLotId, parkingLotName, maxCapacity } = req.user;
+    const { vehicleNumber } = req.body;
 
     // Get current occupancy and previous log for hash chain
     const lastLog = await ParkingLog.findOne({ parkingLotId }).sort({ _id: -1 });
@@ -89,6 +103,42 @@ router.post('/exit', authMiddleware, contractorOnly, async (req, res) => {
         success: false,
         message: 'Cannot log exit. Parking lot is empty.'
       });
+    }
+
+    // Find the entry log for this vehicle
+    let entryLog = null;
+    let fee = 0;
+    let duration = 0;
+
+    if (vehicleNumber) {
+      entryLog = await ParkingLog.findOne({
+        parkingLotId,
+        action: 'entry',
+        vehicleNumber: vehicleNumber.toUpperCase(),
+        exitTime: { $exists: false }
+      }).sort({ entryTime: -1 });
+
+      if (entryLog) {
+        // Calculate duration and fee
+        const exitTime = new Date();
+        duration = Math.ceil((exitTime - entryLog.entryTime) / (1000 * 60)); // minutes
+
+        // Pricing: ₹10/hr for 2-wheeler, ₹20/hr for 4-wheeler, ₹50/hr for heavy
+        const PRICING = {
+          '2-wheeler': 10,
+          '4-wheeler': 20,
+          'heavy': 50
+        };
+
+        const ratePerHour = PRICING[entryLog.vehicleType] || 20;
+        fee = Math.ceil((duration / 60) * ratePerHour);
+
+        // Update entry log with exit info
+        entryLog.exitTime = exitTime;
+        entryLog.duration = duration;
+        entryLog.fee = fee;
+        await entryLog.save();
+      }
     }
 
     const newOccupancy = currentOccupancy - 1;
@@ -105,7 +155,13 @@ router.post('/exit', authMiddleware, contractorOnly, async (req, res) => {
       isViolation: false,
       violationAmount: 0,
       performedBy: req.user.email,
-      previousHash
+      previousHash,
+      vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase() : undefined,
+      vehicleType: entryLog?.vehicleType,
+      exitTime: new Date(),
+      duration,
+      fee,
+      entryLogId: entryLog?._id
     };
 
     // Generate cryptographic hash
@@ -122,6 +178,9 @@ router.post('/exit', authMiddleware, contractorOnly, async (req, res) => {
       data: {
         currentOccupancy: newOccupancy,
         maxCapacity,
+        fee,
+        duration,
+        vehicleType: entryLog?.vehicleType,
         hash: hash.substring(0, 16) + '...'
       }
     });
@@ -506,6 +565,121 @@ router.get('/admin/audit-trail', authMiddleware, adminOnly, async (req, res) => 
       }
     });
   } catch (error) {
+    console.error('Audit trail error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve audit trail.'
+    });
+  }
+});
+
+/**
+ * GET /api/parking/verify-integrity
+ * Verify cryptographic integrity of all parking logs
+ * Admin only - sends notifications if tampering detected
+ */
+router.get('/verify-integrity', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+
+    // Get all parking logs grouped by parking lot
+    const allLogs = await ParkingLog.find().sort({ parkingLotId: 1, timestamp: 1 });
+
+    if (allLogs.length === 0) {
+      return res.json({
+        success: true,
+        isValid: true,
+        totalLogs: 0,
+        verifiedLogs: 0,
+        errors: []
+      });
+    }
+
+    // Group logs by parking lot
+    const logsByLot = {};
+    allLogs.forEach(log => {
+      if (!logsByLot[log.parkingLotId]) {
+        logsByLot[log.parkingLotId] = {
+          parkingLotName: log.parkingLotName,
+          logs: []
+        };
+      }
+      logsByLot[log.parkingLotId].logs.push(log);
+    });
+
+    let totalLogs = 0;
+    let verifiedLogs = 0;
+    const errors = [];
+
+    // Verify each parking lot's chain
+    for (const [parkingLotId, lotData] of Object.entries(logsByLot)) {
+      const { parkingLotName, logs } = lotData;
+      totalLogs += logs.length;
+
+      // Verify hash chain
+      const chainResult = verifyLogChain(logs);
+
+      if (chainResult.valid) {
+        verifiedLogs += logs.length;
+      } else {
+        // Record error with parking lot details
+        // verifyLogChain returns a single error object, not an array of errors
+        errors.push({
+          parkingLotId,
+          parkingLotName,
+          logId: chainResult.logId || 'N/A',
+          timestamp: logs[chainResult.brokenAt] ? logs[chainResult.brokenAt].timestamp : new Date(),
+          issue: chainResult.message
+        });
+      }
+    }
+
+    const isValid = errors.length === 0;
+
+    // If integrity violations found, create notification for admin
+    if (!isValid) {
+      const affectedLots = [...new Set(errors.map(e => e.parkingLotName))];
+      const lotsList = affectedLots.join(', ');
+
+      // Get all admin users
+      const admins = await User.find({ role: 'admin' });
+
+      // Create notification for each admin
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: 'critical',
+          title: '🚨 Data Integrity Violation Detected',
+          message: `Tampering detected in parking logs. Affected lots: ${lotsList}. ${errors.length} issue(s) found. Immediate investigation required.`,
+          metadata: {
+            affectedLots,
+            issueCount: errors.length,
+            verificationTime: new Date()
+          }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      isValid,
+      totalLogs,
+      verifiedLogs,
+      errors: errors.map(e => ({
+        parkingLotId: e.parkingLotId,
+        parkingLotName: e.parkingLotName,
+        issue: e.issue,
+        timestamp: e.timestamp
+      }))
+    });
+
+  } catch (error) {
+    console.error('Integrity verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify data integrity',
+      error: error.message
+    });
   }
 });
 

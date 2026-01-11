@@ -1,7 +1,7 @@
 // issues.js
 // Issues Reporting Page JavaScript
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 let allIssues = [];

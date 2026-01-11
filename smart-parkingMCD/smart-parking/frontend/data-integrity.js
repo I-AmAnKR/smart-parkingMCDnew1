@@ -1,7 +1,7 @@
 // data-integrity.js
 // Data Integrity Status Page JavaScript
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -55,19 +55,44 @@ async function verifyIntegrity() {
             showMessage('✓ Data integrity verification successful!', 'success');
         } else {
             // Data has been tampered
+            const errors = result.errors || [];
+            const affectedLots = [...new Set(errors.map(e => e.parkingLotName))];
+            const errorsByLot = {};
+
+            // Group errors by parking lot
+            errors.forEach(error => {
+                if (!errorsByLot[error.parkingLotName]) {
+                    errorsByLot[error.parkingLotName] = [];
+                }
+                errorsByLot[error.parkingLotName].push(error);
+            });
+
+            const lotDetailsHtml = Object.entries(errorsByLot).map(([lotName, errors]) => `
+                <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-left: 4px solid #dc3545; border-radius: 4px;">
+                    <strong>🏢 ${lotName}</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px;">
+                        ${errors.map(e => `<li>${e.issue}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+
             statusDiv.innerHTML = `
                 <div class="integrity-tampered">
                     <div class="integrity-icon">❌</div>
                     <div class="integrity-details">
                         <h3>Data Integrity Compromised</h3>
                         <p><strong>Status:</strong> Tampering detected in parking logs</p>
-                        <p><strong>Issues Found:</strong> ${result.errors ? result.errors.length : 0}</p>
+                        <p><strong>Affected Parking Lots:</strong> ${affectedLots.join(', ')}</p>
+                        <p><strong>Total Issues Found:</strong> ${result.errors.length}</p>
                         <p><strong>Action Required:</strong> Immediate investigation needed</p>
-                        ${result.errors ? `<p><strong>Details:</strong> ${result.errors.join(', ')}</p>` : ''}
+                        <div style="margin-top: 15px;">
+                            <h4 style="margin-bottom: 10px;">Details by Parking Lot:</h4>
+                            ${lotDetailsHtml}
+                        </div>
                     </div>
                 </div>
             `;
-            showMessage('✗ Data integrity verification failed! Tampering detected.', 'error');
+            showMessage(`✗ Data integrity violation! ${affectedLots.length} parking lot(s) affected. Admin has been notified.`, 'error');
         }
     } catch (error) {
         console.error('Integrity verification error:', error);

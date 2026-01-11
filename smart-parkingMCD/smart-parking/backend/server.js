@@ -10,6 +10,9 @@ const bcrypt = require('bcryptjs');
 // Import routes
 const authRoutes = require('./routes/auth');
 const parkingRoutes = require('./routes/parking');
+const notificationRoutes = require('./routes/notifications');
+const contractorRoutes = require('./routes/contractors');
+const statsRoutes = require('./routes/stats');
 
 // Debug routes
 console.log('authRoutes type:', typeof authRoutes);
@@ -23,21 +26,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 // Middleware
-const allowedOrigins = [
-  "http://127.0.0.1:5500",   // VS Code Live Server
-  "http://localhost:5500"    // alternative localhost
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow tools like curl/Postman
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false // set true only if you use cookies/auth headers
-}));
+app.use(cors()); // Allow all origins for development
 
 app.options("*", cors()); // handle preflight requests
 app.use(express.json());
@@ -46,11 +35,14 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/parking', parkingRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/contractors', contractorRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Smart Parking API is running',
     timestamp: new Date()
   });
@@ -67,10 +59,10 @@ if (process.env.MONGODB_URI) {
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ Connected to MongoDB');
-    
+
     // Create demo users if they don't exist
     await createDemoUsers();
-    
+
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
