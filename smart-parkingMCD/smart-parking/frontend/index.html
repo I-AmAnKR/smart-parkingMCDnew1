@@ -584,13 +584,28 @@
             }
         }
 
-        /* Footer */
-        .login-footer {
-            text-align: center;
+
+
+        /* Footer Styles from Admin */
+        .mcd-footer {
+            background: #1a5490;
             color: white;
-            margin-top: 20px;
+            margin-top: auto;
+            /* Push to bottom if flex column */
+            width: 100%;
+        }
+
+        .footer-bottom {
+            background: #1a5490;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 4px solid #ffa500;
+        }
+
+        .footer-bottom p {
+            margin: 5px 0;
             font-size: 0.85rem;
-            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.9);
         }
     </style>
 </head>
@@ -697,9 +712,13 @@
         </div>
     </div>
 
-    <div class="login-footer">
-        <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
-    </div>
+    <!-- MCD Footer -->
+    <footer class="mcd-footer">
+        <div class="footer-bottom">
+            <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
+            <p>Smart Parking Management System | Designed & Developed for MCD Hackathon</p>
+        </div>
+    </footer>
 
     <script>
         // Current selected role
