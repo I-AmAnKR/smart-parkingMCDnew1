@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contractor Dashboard</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+
+<body>
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="contractor.html" class="mcd-logo-link" title="Refresh Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">Contractor Dashboard</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="#dashboard" class="nav-item active" onclick="setActiveNav(this)">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="#recent-activity" class="nav-item" onclick="setActiveNav(this)">
+                <span class="nav-text">Recent Activity</span>
+            </a>
+            <a href="#vehicle-management" class="nav-item" onclick="setActiveNav(this)">
+                <span class="nav-text">Vehicle Management</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Dashboard Section -->
+        <section id="dashboard">
+            <!-- Quick Stats Cards -->
+            <div class="stats-grid"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="command-stat-card green-border">
+                    <p class="stat-label">VEHICLES IN</p>
+                    <h2 class="stat-value" id="todayEntries">0</h2>
+                    <p class="stat-subtitle">Today's Entries</p>
+                </div>
+                <div class="command-stat-card red-border">
+                    <p class="stat-label">VEHICLES OUT</p>
+                    <h2 class="stat-value" id="todayExits">0</h2>
+                    <p class="stat-subtitle">Today's Exits</p>
+                </div>
+                <div class="command-stat-card blue-border">
+                    <p class="stat-label">CURRENT OCCUPANCY</p>
+                    <h2 class="stat-value" id="currentOccupancyStat">0</h2>
+                    <p class="stat-subtitle">Vehicles Parked</p>
+                </div>
+            </div>
+
+            <!-- Parking Lot Info -->
+            <div class="card">
+                <h2 id="parkingLotName">Loading...</h2>
+                <div class="occupancy-display">
+                    <div class="occupancy-number" id="occupancyDisplay">
+                        <span class="current" id="currentOccupancy">0</span>
+                        <span class="separator">/</span>
+                        <span class="max" id="maxCapacity">0</span>
+                    </div>
+                    <p class="occupancy-label">Current Occupancy / Max Capacity</p>
+                </div>
+
+                <div id="statusBadge" class="status-badge status-normal">
+                    Normal Operation
+                </div>
+            </div>
+
+            <!-- Today's Summary -->
+            <div class="card" style="margin-top: 20px;">
+                <h3>📊 Today's Summary</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;">
+                    <div
+                        style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Peak Occupancy</p>
+                        <h3 style="margin: 5px 0; color: #28a745;" id="peakOccupancy">0</h3>
+                    </div>
+                    <div
+                        style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #5b9bd5;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Average Duration</p>
+                        <h3 style="margin: 5px 0; color: #5b9bd5;" id="avgDuration">0 min</h3>
+                    </div>
+                    <div
+                        style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffa500;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Total Transactions</p>
+                        <h3 style="margin: 5px 0; color: #ffa500;" id="totalTransactions">0</h3>
+                    </div>
+                    <div
+                        style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #9b59b6;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #666;">Utilization Rate</p>
+                        <h3 style="margin: 5px 0; color: #9b59b6;" id="utilizationRate">0%</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shift Information -->
+            <div class="card"
+                style="margin-top: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+                    <span>⏰</span> Current Shift Information
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div>
+                        <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Shift Start</p>
+                        <h4 style="margin: 5px 0;" id="shiftStart">09:00 AM</h4>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Shift End</p>
+                        <h4 style="margin: 5px 0;" id="shiftEnd">05:00 PM</h4>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Time Remaining</p>
+                        <h4 style="margin: 5px 0;" id="timeRemaining">-- hrs</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts & Notifications -->
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <span>🔔</span> Alerts & Notifications
+                </h3>
+                <div id="alertsContainer" style="margin-top: 15px;">
+                    <div class="alert-item"
+                        style="padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 10px;">
+                        <strong>⚠️ Capacity Warning:</strong> Parking lot is approaching full capacity
+                    </div>
+                    <div class="alert-item"
+                        style="padding: 12px; background: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 4px; margin-bottom: 10px;">
+                        <strong>ℹ️ Reminder:</strong> Log all vehicle entries and exits accurately
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vehicle Management Section -->
+        <section id="vehicle-management">
+            <!-- Action Buttons -->
+            <div class="card">
+                <h3>Vehicle Management</h3>
+                <div class="button-group">
+                    <button onclick="logEntry()" class="btn btn-success btn-lg" id="entryBtn">
+                        ➕ Vehicle Entry
+                    </button>
+                    <button onclick="logExit()" class="btn btn-warning btn-lg" id="exitBtn">
+                        ➖ Vehicle Exit
+                    </button>
+                </div>
+                <div id="actionMessage" class="action-message" style="display: none;"></div>
+            </div>
+        </section>
+
+        <!-- Recent Activity Section -->
+        <section id="recent-activity">
+            <!-- Recent Activity -->
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="recentLogs" class="logs-container">
+                    <p class="text-muted">Loading recent activity...</p>
+                </div>
+            </div>
+
+            <!-- Quick Reference Guide -->
+            <div class="card" style="margin-top: 20px; background: #1a5490; color: white;">
+                <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+                    <span>📖</span> Quick Reference Guide
+                </h3>
+                <div style="margin-top: 15px;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <div
+                            style="padding: 15px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h4 style="margin: 0 0 10px 0; color: #90ee90;">✅ Vehicle Entry Steps</h4>
+                            <ol style="margin: 0; padding-left: 20px; font-size: 0.9rem; color: white;">
+                                <li>Click "Vehicle Entry" button</li>
+                                <li>Verify available space</li>
+                                <li>Confirm entry in system</li>
+                                <li>Guide vehicle to parking spot</li>
+                            </ol>
+                        </div>
+                        <div
+                            style="padding: 15px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; border-left: 4px solid #ffa500;">
+                            <h4 style="margin: 0 0 10px 0; color: #ffd966;">✅ Vehicle Exit Steps</h4>
+                            <ol style="margin: 0; padding-left: 20px; font-size: 0.9rem; color: white;">
+                                <li>Click "Vehicle Exit" button</li>
+                                <li>Verify vehicle details</li>
+                                <li>Confirm exit in system</li>
+                                <li>Update occupancy count</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; border-left: 4px solid #ffa500;">
+                        <h4 style="margin: 0 0 10px 0; color: #ffa500;">📞 Emergency Contacts</h4>
+                        <div
+                            style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.9rem; color: white;">
+                            <div><strong>MCD Helpline:</strong> 155305</div>
+                            <div><strong>Supervisor:</strong> +91-XXXX-XXXXXX</div>
+                            <div><strong>Security:</strong> +91-XXXX-XXXXXX</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mcd-footer">
+        <div class="footer-bottom">
+            <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
+            <p>Smart Parking Management System | Designed & Developed for MCD Hackathon</p>
+        </div>
+    </footer>
+
+    <script src="contractor.js"></script>
+</body>
+
+</html>

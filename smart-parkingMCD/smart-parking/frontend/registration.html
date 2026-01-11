@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contractor Registration - MCD Admin</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+
+<body>
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="admin.html" class="mcd-logo-link" title="Back to Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">Contractor Registration</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="admin.html#dashboard" class="nav-item">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="admin.html#violations-section" class="nav-item">
+                <span class="nav-text">Violations Over Time</span>
+            </a>
+            <a href="admin.html#occupancy-section" class="nav-item">
+                <span class="nav-text">Occupancy vs Capacity</span>
+            </a>
+            <a href="registration.html" class="nav-item active">
+                <span class="nav-text">Registration</span>
+            </a>
+            <a href="settings.html" class="nav-item">
+                <span class="nav-text">Settings</span>
+            </a>
+            <a href="issues.html" class="nav-item">
+                <span class="nav-text">Issues</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Registration Section -->
+        <section id="registration-page">
+            <div class="card">
+                <h2>📝 Register New Contractor</h2>
+                <p class="text-muted">Register new parking lot contractors and assign them to parking lots.</p>
+
+                <div id="messageBox" class="message-box" style="display: none;"></div>
+
+                <div class="registration-form">
+                    <form id="contractorRegistrationForm">
+                        <div class="form-row">
+                            <div class="form-group-inline">
+                                <label for="contractorEmail">Email Address *</label>
+                                <input type="email" id="contractorEmail" class="form-control"
+                                    placeholder="contractor@example.com" required>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="contractorPassword">Password *</label>
+                                <input type="password" id="contractorPassword" class="form-control"
+                                    placeholder="Minimum 6 characters" minlength="6" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group-inline">
+                                <label for="parkingLotName">Parking Lot Name *</label>
+                                <input type="text" id="parkingLotName" class="form-control"
+                                    placeholder="e.g., Connaught Place Parking" required>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="parkingLotId">Parking Lot ID *</label>
+                                <input type="text" id="parkingLotId" class="form-control" placeholder="e.g., LOT004"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group-inline">
+                                <label for="maxCapacity">Maximum Capacity *</label>
+                                <input type="number" id="maxCapacity" class="form-control" placeholder="e.g., 50"
+                                    min="1" required>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="location">Location (Optional)</label>
+                                <input type="text" id="location" class="form-control"
+                                    placeholder="e.g., Connaught Place, New Delhi">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="registerBtn">
+                                Register Contractor
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Registered Contractors List -->
+            <div class="card">
+                <h2>📋 Registered Contractors</h2>
+                <div class="table-responsive">
+                    <table class="contractors-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Parking Lot Name</th>
+                                <th>Lot ID</th>
+                                <th>Max Capacity</th>
+                                <th>Registered On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contractorsTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Loading contractors...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="registration.js"></script>
+</body>
+
+</html>

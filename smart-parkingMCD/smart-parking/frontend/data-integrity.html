@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Integrity Status - MCD Admin</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+
+<body>
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="admin.html" class="mcd-logo-link" title="Back to Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">Data Integrity Status</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="admin.html#dashboard" class="nav-item">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="admin.html#violations-section" class="nav-item">
+                <span class="nav-text">Violations Over Time</span>
+            </a>
+            <a href="data-integrity.html" class="nav-item active">
+                <span class="nav-text">Data Integrity Status</span>
+            </a>
+            <a href="registration.html" class="nav-item">
+                <span class="nav-text">Registration</span>
+            </a>
+            <a href="settings.html" class="nav-item">
+                <span class="nav-text">Settings</span>
+            </a>
+            <a href="issues.html" class="nav-item">
+                <span class="nav-text">Issues</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Data Integrity Section -->
+        <section id="data-integrity-page">
+            <div id="messageBox" class="message-box" style="display: none;"></div>
+
+            <!-- Data Integrity Card -->
+            <div class="card integrity-card">
+                <div class="integrity-header">
+                    <h2>🔒 Cryptographic Data Integrity Verification</h2>
+                    <button onclick="verifyIntegrity()" class="btn btn-secondary btn-sm" id="verifyBtn">
+                        Verify Now
+                    </button>
+                </div>
+                <div id="integrityStatus" class="integrity-status">
+                    <div class="integrity-loading">Click "Verify Now" to check cryptographic integrity of all parking
+                        logs</div>
+                </div>
+            </div>
+
+            <!-- Integrity Information -->
+            <div class="card">
+                <h2>📋 About Data Integrity</h2>
+                <div class="info-section">
+                    <h3>What is Data Integrity Verification?</h3>
+                    <p>Our system uses blockchain-style cryptographic hashing to ensure that parking logs cannot be
+                        tampered with. Each log entry contains:</p>
+                    <ul>
+                        <li><strong>Hash:</strong> A unique cryptographic fingerprint of the log entry</li>
+                        <li><strong>Previous Hash:</strong> Links to the previous log entry, creating an unbreakable
+                            chain</li>
+                        <li><strong>Timestamp:</strong> Verified to prevent backdating or future-dating</li>
+                    </ul>
+
+                    <h3 style="margin-top: 25px;">How Verification Works</h3>
+                    <p>When you click "Verify Now", the system:</p>
+                    <ol>
+                        <li>Retrieves all parking logs from the database</li>
+                        <li>Recalculates the hash for each entry</li>
+                        <li>Verifies the chain of hashes is unbroken</li>
+                        <li>Checks for timestamp anomalies</li>
+                        <li>Reports any tampering or inconsistencies</li>
+                    </ol>
+
+                    <h3 style="margin-top: 25px;">Security Features</h3>
+                    <div class="security-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">🔐</span>
+                            <div>
+                                <strong>Immutable Logs</strong>
+                                <p>Once created, logs cannot be modified</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">⛓️</span>
+                            <div>
+                                <strong>Blockchain Chain</strong>
+                                <p>Each log links to the previous one</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">⏰</span>
+                            <div>
+                                <strong>Timestamp Validation</strong>
+                                <p>Prevents backdating violations</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✅</span>
+                            <div>
+                                <strong>Audit Trail</strong>
+                                <p>Complete history of all changes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="data-integrity.js"></script>
+</body>
+
+</html>

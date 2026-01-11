@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCD Admin Dashboard</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="#" onclick="location.reload(); return false;" class="mcd-logo-link" title="Refresh Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">SPMS-Admin Page</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="#dashboard" class="nav-item active" onclick="setActiveNav(this)">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="contractor-management.html" class="nav-item">
+                <span class="nav-text">Contractor Management</span>
+            </a>
+            <a href="#violations-section" class="nav-item" onclick="setActiveNav(this)">
+                <span class="nav-text">Violations Over Time</span>
+            </a>
+            <a href="data-integrity.html" class="nav-item">
+                <span class="nav-text">Data Integrity Status</span>
+            </a>
+            <a href="registration.html" class="nav-item">
+                <span class="nav-text">Registration</span>
+            </a>
+            <a href="settings.html" class="nav-item">
+                <span class="nav-text">Settings</span>
+            </a>
+            <a href="issues.html" class="nav-item">
+                <span class="nav-text">Issues</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Dashboard Section -->
+        <section id="dashboard">
+            <!-- Administrative Overview Section -->
+            <div class="admin-overview-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <p class="section-label">ADMINISTRATIVE OVERVIEW</p>
+                        <h1 class="section-main-title">City Command Center</h1>
+                    </div>
+                    <button onclick="downloadDailyReport()" class="btn-download-report">
+                        <span class="download-icon">📥</span> Download Daily Report
+                    </button>
+                </div>
+
+                <!-- Command Center Stats Grid -->
+                <div class="command-stats-grid">
+                    <div class="command-stat-card green-border">
+                        <p class="stat-label">TOTAL REVENUE</p>
+                        <h2 class="stat-value" id="totalRevenue">₹0</h2>
+                        <p class="stat-subtitle">Today's Collection</p>
+                    </div>
+                    <div class="command-stat-card red-border">
+                        <p class="stat-label">ACTIVE VIOLATIONS</p>
+                        <h2 class="stat-value" id="activeViolations">0</h2>
+                        <p class="stat-subtitle">Action Required</p>
+                    </div>
+                    <div class="command-stat-card blue-border">
+                        <p class="stat-label">VEHICLE COUNT</p>
+                        <h2 class="stat-value" id="vehicleCount">0</h2>
+                        <p class="stat-subtitle">All Zones</p>
+                    </div>
+                    <div class="command-stat-card purple-border">
+                        <p class="stat-label">PENDING APPS</p>
+                        <h2 class="stat-value" id="pendingApps">0</h2>
+                        <p class="stat-subtitle">Review Queue</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Parking Lots Overview -->
+            <div class="card official-card">
+                <h2>🚗 Parking Lots Status</h2>
+                <div id="parkingLotsGrid" class="parking-lots-grid">
+                    <p class="text-muted">Loading parking lots...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Occupancy vs Capacity Section -->
+        <section id="occupancy-section">
+            <div class="card official-card">
+                <h2>🅿️ Occupancy vs Capacity</h2>
+                <canvas id="occupancyChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Violations Over Time Section -->
+        <section id="violations-section">
+            <div class="card official-card">
+                <h2>⚠️ Violations Over Time (7 Days)</h2>
+                <canvas id="violationsChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Geographic Information System Section -->
+        <section id="gis-section">
+            <div class="gis-section">
+                <div class="section-header-simple">
+                    <div class="section-title-group">
+                        <p class="section-label">GEOGRAPHIC INFORMATION SYSTEM</p>
+                        <h2 class="section-subtitle">Live Parking Network</h2>
+                    </div>
+                    <div class="zone-filters">
+                        <button class="zone-btn active" onclick="filterZone('all')">All</button>
+                        <button class="zone-btn" onclick="filterZone('north')">North</button>
+                        <button class="zone-btn" onclick="filterZone('south')">South</button>
+                        <button class="zone-btn" onclick="filterZone('central')">Central</button>
+                        <button class="zone-btn" onclick="filterZone('west')">West</button>
+                        <button class="zone-btn" onclick="filterZone('east')">East</button>
+                    </div>
+                </div>
+
+                <!-- Delhi Map Container -->
+                <div class="delhi-map-container">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d224346.48129763652!2d76.87677984999999!3d28.52758485!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd5b347eb62d%3A0x52c2b7494e204dce!2sNew%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"
+                        width="100%" height="350" style="border:0; border-radius: 8px;" allowfullscreen=""
+                        loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mcd-footer">
+        <div class="footer-bottom">
+            <p>&copy; 2026 Municipal Corporation of Delhi. All Rights Reserved.</p>
+            <p>Smart Parking Management System | Designed & Developed for MCD Hackathon</p>
+        </div>
+    </footer>
+
+    <script src="admin.js"></script>
+</body>
+
+</html>

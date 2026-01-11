@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Issues - MCD Admin</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+
+<body>
+    <!-- MCD Government Header -->
+    <header class="mcd-header">
+        <div class="mcd-header-container">
+            <div class="mcd-logo-section">
+                <a href="admin.html" class="mcd-logo-link" title="Back to Dashboard">
+                    <img src="mcd-logo.png" alt="MCD Logo" class="mcd-logo-img">
+                </a>
+            </div>
+            <div class="mcd-title-center">
+                <h1 class="mcd-page-title">Report Issues</h1>
+            </div>
+            <div class="mcd-user-section">
+                <div class="user-icon-wrapper" title="User Account">
+                    <svg class="user-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" fill="#1a5490" />
+                        <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
+                            fill="#1a5490" />
+                    </svg>
+                    <div class="user-email-tooltip" id="userEmail"></div>
+                </div>
+                <button onclick="logout()" class="mcd-logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="admin-navbar">
+        <div class="admin-nav-container">
+            <a href="admin.html#dashboard" class="nav-item">
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="admin.html#violations-section" class="nav-item">
+                <span class="nav-text">Violations Over Time</span>
+            </a>
+            <a href="admin.html#occupancy-section" class="nav-item">
+                <span class="nav-text">Occupancy vs Capacity</span>
+            </a>
+            <a href="registration.html" class="nav-item">
+                <span class="nav-text">Registration</span>
+            </a>
+            <a href="settings.html" class="nav-item">
+                <span class="nav-text">Settings</span>
+            </a>
+            <a href="issues.html" class="nav-item active">
+                <span class="nav-text">Issues</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Issues Section -->
+        <section id="issues-page">
+            <div id="messageBox" class="message-box" style="display: none;"></div>
+
+            <!-- Report New Issue -->
+            <div class="card">
+                <h2>🔧 Report New Issue</h2>
+                <p class="text-muted">Report technical issues, bugs, or system problems to help us improve the platform.
+                </p>
+
+                <div class="issue-form">
+                    <form id="issueReportForm">
+                        <div class="form-row">
+                            <div class="form-group-inline">
+                                <label for="issueType">Issue Type *</label>
+                                <select id="issueType" class="form-control" required>
+                                    <option value="">Select issue type...</option>
+                                    <option value="data-integrity">Data Integrity Problem</option>
+                                    <option value="authentication">Login/Authentication Issue</option>
+                                    <option value="visualization">Chart/Visualization Error</option>
+                                    <option value="performance">Performance Issue</option>
+                                    <option value="api">API/Backend Error</option>
+                                    <option value="ui">UI/Display Issue</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="priority">Priority *</label>
+                                <select id="priority" class="form-control" required>
+                                    <option value="">Select priority...</option>
+                                    <option value="low">Low - Minor inconvenience</option>
+                                    <option value="medium">Medium - Affects workflow</option>
+                                    <option value="high">High - Major functionality broken</option>
+                                    <option value="critical">Critical - System down</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-block">
+                            <label for="issueTitle">Issue Title *</label>
+                            <input type="text" id="issueTitle" class="form-control"
+                                placeholder="Brief description of the issue" required>
+                        </div>
+
+                        <div class="form-group-block">
+                            <label for="issueDescription">Detailed Description *</label>
+                            <textarea id="issueDescription" class="form-control" rows="6"
+                                placeholder="Describe the issue in detail. Include steps to reproduce if applicable..."
+                                required></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group-inline">
+                                <label for="affectedArea">Affected Area</label>
+                                <input type="text" id="affectedArea" class="form-control"
+                                    placeholder="e.g., Dashboard, Registration Page">
+                            </div>
+                            <div class="form-group-inline">
+                                <label for="browserInfo">Browser/Device</label>
+                                <input type="text" id="browserInfo" class="form-control"
+                                    placeholder="e.g., Chrome 120, Windows 11">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                📤 Submit Issue Report
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                🔄 Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Issue Statistics -->
+            <div class="card">
+                <h2>📊 Issue Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-info">
+                            <h3 id="totalIssues">0</h3>
+                            <p>Total Issues</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info">
+                            <h3 id="openIssues">0</h3>
+                            <p>Open Issues</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-danger">
+                        <div class="stat-icon">🔴</div>
+                        <div class="stat-info">
+                            <h3 id="criticalIssues">0</h3>
+                            <p>Critical Issues</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Issues -->
+            <div class="card">
+                <h2>📝 Recent Issues</h2>
+                <div class="issues-filter">
+                    <label>Filter by status:</label>
+                    <select id="statusFilter" class="form-control" onchange="filterIssues()" style="max-width: 200px;">
+                        <option value="all">All Issues</option>
+                        <option value="open">Open</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div id="issuesList" class="issues-list">
+                    <p class="text-muted">No issues reported yet.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="issues.js"></script>
+</body>
+
+</html>
