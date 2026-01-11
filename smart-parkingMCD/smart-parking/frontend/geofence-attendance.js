@@ -84,6 +84,12 @@ const PARKING_LOCATIONS = {
         lat: 28.6311,
         lng: 77.2191,
         zone: 'New Delhi'
+    },
+    'nsut': {
+        name: 'Netaji Subhas University of Technology',
+        lat: 28.6109,
+        lng: 77.0385,
+        zone: 'Najafgarh'
     }
 };
 
