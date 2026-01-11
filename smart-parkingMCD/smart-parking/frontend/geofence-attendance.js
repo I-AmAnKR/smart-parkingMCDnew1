@@ -65,19 +65,19 @@ const PARKING_LOCATIONS = {
         name: 'M.R. Public School',
         lat: 28.6745,
         lng: 77.0605,
-        zone: 'Rohini'
+        zone: 'North West Delhi'
     },
     'kamla-nagar': {
         name: 'Kamla Nagar',
         lat: 28.6809,
         lng: 77.2046,
-        zone: 'Civil Lines'
+        zone: 'East Delhi'
     },
     'model-town': {
         name: 'Model Town',
         lat: 28.7095,
         lng: 77.1888,
-        zone: 'Civil Lines'
+        zone: 'East Delhi'
     },
     'palika-bazar': {
         name: 'Palika Bazar',
@@ -185,6 +185,8 @@ function checkLocation() {
         statusDiv.className = 'location-status inside';
         statusText.textContent = 'Location Verified ✓';
         statusDetail.textContent = 'Custom location detected - Geofence check skipped';
+        // Set dummy location to prevent camera crash
+        currentLocation = { lat: 0, lng: 0, accuracy: 0 };
         isLocationVerified = true;
         updateSubmitButton();
         return;
@@ -233,7 +235,8 @@ function checkLocation() {
             } else {
                 statusDiv.className = 'location-status outside';
                 statusText.textContent = 'Outside Geofence ❌';
-                statusDetail.textContent = `You are ${distance.toFixed(0)}m away from ${selectedParkingLot.name}. Must be within ${GEOFENCE_RADIUS}m.`;
+                // Add Demo Link to bypass
+                statusDetail.innerHTML = `You are ${distance.toFixed(0)}m away. <br><a href="#" onclick="simulateMockLocation(); return false;" style="color:#d9534f; font-weight:bold;">[DEMO: FORCE VERIFY]</a>`;
                 isLocationVerified = false;
                 updateSubmitButton();
             }
@@ -363,7 +366,13 @@ function capturePhoto() {
     context.fillStyle = 'white';
     context.font = 'bold 14px Arial';
     const timestamp = new Date().toLocaleString();
-    const locationText = `📍 ${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+    let locationText = "📍 Location: Unknown";
+
+    if (currentLocation && currentLocation.lat) {
+        locationText = `📍 ${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+    } else if (selectedParkingLot && selectedParkingLot.isCustom) {
+        locationText = `📍 ${selectedParkingLot.name} (Custom)`;
+    }
 
     context.fillText(`⏰ ${timestamp}`, 10, canvas.height - 35);
     context.fillText(locationText, 10, canvas.height - 15);
