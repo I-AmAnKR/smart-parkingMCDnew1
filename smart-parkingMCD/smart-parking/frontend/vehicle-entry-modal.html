@@ -1,0 +1,211 @@
+<!-- Vehicle Entry/Exit Modal -->
+<div id="vehicleEntryModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1a5490 0%, #2d6ba8 100%); color: white;">
+            <h2 style="margin: 0; font-size: 1.3rem;">🚗 Vehicle Entry</h2>
+            <button onclick="closeVehicleEntryModal()" class="close-btn"
+                style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 25px;">
+            <!-- Vehicle Details Form -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; margin-bottom: 8px; color: #1a5490; font-weight: 600; font-size: 0.95rem;">Vehicle
+                    Number *</label>
+                <input type="text" id="entryVehicleNumber" placeholder="DL01AB1234"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem; text-transform: uppercase;"
+                    oninput="this.value = this.value.toUpperCase()">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; margin-bottom: 8px; color: #1a5490; font-weight: 600; font-size: 0.95rem;">Vehicle
+                    Type *</label>
+                <select id="entryVehicleType" onchange="calculateEntryAmount()"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem;">
+                    <option value="2-wheeler">2-Wheeler (₹10/hour)</option>
+                    <option value="4-wheeler" selected>4-Wheeler (₹20/hour)</option>
+                    <option value="commercial">Commercial (₹30/hour)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; margin-bottom: 8px; color: #1a5490; font-weight: 600; font-size: 0.95rem;">Expected
+                    Duration (hours)</label>
+                <input type="number" id="entryDuration" value="2" min="1" max="24" onchange="calculateEntryAmount()"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; margin-bottom: 8px; color: #1a5490; font-weight: 600; font-size: 0.95rem;">Estimated
+                    Amount</label>
+                <input type="text" id="entryAmount" value="₹40" readonly
+                    style="width: 100%; padding: 12px; border: 2px solid #28a745; border-radius: 6px; font-size: 1.2rem; font-weight: 700; color: #28a745; background: #f0f9f4;">
+            </div>
+
+            <!-- QR Code Display (Demo) -->
+            <div id="qrCodeSection"
+                style="display: none; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 8px; border: 2px dashed #1a5490;">
+                <h4 style="margin: 0 0 15px 0; color: #1a5490; text-align: center;">Payment QR Code (Demo)</h4>
+                <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                    <canvas id="entryQRCanvas" width="180" height="180"
+                        style="border: 3px solid #1a5490; border-radius: 8px;"></canvas>
+                </div>
+                <div style="text-align: center; font-size: 0.85rem; color: #666;">
+                    <p style="margin: 5px 0;"><strong>UPI ID:</strong> mcd.parking@upi</p>
+                    <p style="margin: 5px 0;"><strong>Amount:</strong> <span id="qrAmount"
+                            style="color: #28a745; font-weight: 700;">₹40</span></p>
+                    <p style="margin: 10px 0 0 0; font-size: 0.75rem; color: #999; font-style: italic;">
+                        ⚠️ For demo purposes only - Payment not required
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button onclick="showQRCode()"
+                    style="flex: 1; padding: 14px; background: #ffa500; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+                    📱 Show QR Code
+                </button>
+                <button onclick="addVehicleEntry()"
+                    style="flex: 1; padding: 14px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+                    ✅ Add Vehicle (Skip Payment)
+                </button>
+            </div>
+
+            <p style="margin: 15px 0 0 0; font-size: 0.8rem; color: #666; text-align: center; font-style: italic;">
+                💡 This is a prototype - vehicles can be added without payment. Revenue is calculated automatically
+                based on parking duration.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Vehicle Exit Modal -->
+<div id="vehicleExitModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white;">
+            <h2 style="margin: 0; font-size: 1.3rem;">🚪 Vehicle Exit</h2>
+            <button onclick="closeVehicleExitModal()" class="close-btn"
+                style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 25px;">
+            <!-- Search Vehicle -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; margin-bottom: 8px; color: #dc3545; font-weight: 600; font-size: 0.95rem;">Vehicle
+                    Number *</label>
+                <input type="text" id="exitVehicleNumber" placeholder="DL01AB1234"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem; text-transform: uppercase;"
+                    oninput="this.value = this.value.toUpperCase(); searchParkedVehicle()">
+            </div>
+
+            <!-- Vehicle Details (shown after search) -->
+            <div id="exitVehicleDetails"
+                style="display: none; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #dc3545;">Vehicle Found</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
+                    <div>
+                        <strong style="color: #666;">Entry Time:</strong>
+                        <p id="exitEntryTime" style="margin: 5px 0 0 0; color: #333; font-weight: 600;">--</p>
+                    </div>
+                    <div>
+                        <strong style="color: #666;">Vehicle Type:</strong>
+                        <p id="exitVehicleType" style="margin: 5px 0 0 0; color: #333; font-weight: 600;">--</p>
+                    </div>
+                    <div>
+                        <strong style="color: #666;">Duration:</strong>
+                        <p id="exitDuration"
+                            style="margin: 5px 0 0 0; color: #ffa500; font-weight: 700; font-size: 1.1rem;">--</p>
+                    </div>
+                    <div>
+                        <strong style="color: #666;">Amount:</strong>
+                        <p id="exitAmount"
+                            style="margin: 5px 0 0 0; color: #28a745; font-weight: 700; font-size: 1.1rem;">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeVehicleExitModal()"
+                    style="flex: 1; padding: 14px; background: #6c757d; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+                    Cancel
+                </button>
+                <button id="confirmExitBtn" onclick="confirmVehicleExit()" disabled
+                    style="flex: 1; padding: 14px; background: #dc3545; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; opacity: 0.5;">
+                    ✅ Confirm Exit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Buttons -->
+<div class="floating-actions"
+    style="position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 999;">
+    <button onclick="openVehicleEntryModal()"
+        style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; font-size: 1.8rem; cursor: pointer; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4); transition: transform 0.3s ease;"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        ➕
+    </button>
+    <button onclick="openVehicleExitModal()"
+        style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white; border: none; font-size: 1.8rem; cursor: pointer; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4); transition: transform 0.3s ease;"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        ➖
+    </button>
+</div>
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .close-btn:hover {
+        transform: rotate(90deg);
+        transition: transform 0.3s ease;
+    }
+</style>

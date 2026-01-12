@@ -348,8 +348,22 @@
         </div>
     </footer>
 
+    <!-- Include Vehicle Entry/Exit Modal -->
+    <script>
+        // Load vehicle entry modal HTML
+        fetch('vehicle-entry-modal.html')
+            .then(response => response.text())
+            .then(html => {
+                const div = document.createElement('div');
+                div.innerHTML = html;
+                document.body.appendChild(div);
+            })
+            .catch(err => console.error('Error loading vehicle modal:', err));
+    </script>
+
     <script src="attendance-modal.js"></script>
     <script src="contractor.js"></script>
+    <script src="vehicle-entry-exit.js"></script>
 </body>
 
 </html>
