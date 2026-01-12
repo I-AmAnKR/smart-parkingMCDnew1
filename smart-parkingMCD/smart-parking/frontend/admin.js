@@ -416,7 +416,12 @@ function displayViolations(violations) {
         `;
     }).join('');
 
-    document.getElementById('violationsList').innerHTML = html || '<p class="text-muted">No recent violations</p>';
+    const list = document.getElementById('violationsList');
+    if (list) {
+        list.innerHTML = html || '<p class="text-muted">No recent violations</p>';
+    } else {
+        console.warn('Violations list container not found');
+    }
 }
 
 async function loadCharts() {
@@ -576,9 +581,12 @@ async function askAI() {
 }
 
 // Allow Enter key for AI query
-document.getElementById('aiQuery').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') askAI();
-});
+const aiQueryInput = document.getElementById('aiQuery');
+if (aiQueryInput) {
+    aiQueryInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askAI();
+    });
+}
 
 // Verify cryptographic integrity
 async function verifyIntegrity() {

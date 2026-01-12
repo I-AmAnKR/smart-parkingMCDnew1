@@ -181,6 +181,62 @@
                 <h2>⚠️ Violations Over Time (7 Days)</h2>
                 <canvas id="violationsChart"></canvas>
             </div>
+
+            <!-- Recent Violations List -->
+            <div class="card official-card" style="margin-top: 20px;">
+                <h2>📋 Recent Violations</h2>
+                <div id="violationsList" class="violations-list" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted">Loading recent violations...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Assistant & Integrity Section -->
+        <section id="ai-integrity-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- AI Assistant -->
+            <div class="card official-card">
+                <h2>🤖 AI Assistant</h2>
+                <div style="margin-bottom: 20px;">
+                    <button id="aiReportBtn" onclick="generateAIReport()" class="btn-primary"
+                        style="width: 100%; padding: 10px; margin-bottom: 10px;">
+                        🤖 Generate AI Compliance Report
+                    </button>
+                    <div id="aiReport"
+                        style="display: none; padding: 15px; background: #f8f9fa; border-radius: 6px; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    </div>
+                </div>
+
+                <div class="ai-query-box">
+                    <label for="aiQuery" style="display: block; margin-bottom: 8px; font-weight: 600;">Ask AI about
+                        Parking Data</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="aiQuery" placeholder="e.g. 'Show revenue trends for North Delhi'"
+                            style="flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <button id="aiQueryBtn" onclick="askAI()" class="btn-secondary"
+                            style="padding: 8px 16px;">Ask</button>
+                    </div>
+                    <div id="aiAnswer"
+                        style="display: none; margin-top: 15px; padding: 15px; background: #e8f4fc; border-radius: 6px; border-left: 4px solid #1a5490;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Integrity Check -->
+            <div class="card official-card">
+                <h2>🔐 Data Integrity</h2>
+                <p class="text-muted" style="margin-bottom: 15px;">Verify the cryptographic hash chain to ensure no data
+                    has been tampered with.</p>
+
+                <div id="integrityStatus"
+                    style="margin-bottom: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 6px; border: 1px dashed #ced4da;">
+                    <span style="color: #6c757d;">Status not verified</span>
+                </div>
+
+                <button id="verifyBtn" onclick="verifyIntegrity()" class="btn-success"
+                    style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 600;">
+                    🛡️ Verify Blockchain Integrity
+                </button>
+            </div>
         </section>
 
         <!-- Geographic Information System Section -->
