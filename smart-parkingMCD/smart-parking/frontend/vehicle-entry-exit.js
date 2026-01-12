@@ -271,68 +271,93 @@ function confirmVehicleExit() {
 // ========== DASHBOARD STATS UPDATE ==========
 
 function updateDashboardStats() {
+    // Reload data from localStorage to get latest changes
+    parkedVehicles = JSON.parse(localStorage.getItem('parkedVehicles') || '[]');
+    vehicleHistory = JSON.parse(localStorage.getItem('vehicleHistory') || '[]');
+
     // Get today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Filter today's entries and exits
-    const todayEntries = vehicleHistory.filter(v => {
+    // Count today's entries: currently parked + already exited
+    const todayParkedEntries = parkedVehicles.filter(v => {
         const entryDate = new Date(v.entryTime);
         entryDate.setHours(0, 0, 0, 0);
         return entryDate.getTime() === today.getTime();
     });
 
+    const todayExitedEntries = vehicleHistory.filter(v => {
+        const entryDate = new Date(v.entryTime);
+        entryDate.setHours(0, 0, 0, 0);
+        return entryDate.getTime() === today.getTime();
+    });
+
+    // Total entries = currently parked + already exited
+    const entriesCount = todayParkedEntries.length + todayExitedEntries.length;
+
+    // Count today's exits
     const todayExits = vehicleHistory.filter(v => {
         if (!v.exitTime) return false;
         const exitDate = new Date(v.exitTime);
         exitDate.setHours(0, 0, 0, 0);
         return exitDate.getTime() === today.getTime();
     });
-
-    // Calculate stats
-    const entriesCount = todayEntries.length;
     const exitsCount = todayExits.length;
+
+    // Current occupancy = currently parked vehicles
     const currentOccupancy = parkedVehicles.length;
+
+    // Total revenue from today's exits
     const totalRevenue = todayExits.reduce((sum, v) => sum + (v.revenue || 0), 0);
 
-    // Update UI
-    document.getElementById('todayEntries').textContent = entriesCount;
-    document.getElementById('todayExits').textContent = exitsCount;
-    document.getElementById('currentOccupancyStat').textContent = currentOccupancy;
-    document.getElementById('currentOccupancy').textContent = currentOccupancy;
+    // Update UI elements (with null checks)
+    const updateElement = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
 
-    // Update total transactions
-    document.getElementById('totalTransactions').textContent = entriesCount + exitsCount;
+    updateElement('todayEntries', entriesCount);
+    updateElement('todayExits', exitsCount);
+    updateElement('currentOccupancyStat', currentOccupancy);
+    updateElement('currentOccupancy', currentOccupancy);
+    updateElement('totalTransactions', entriesCount + exitsCount);
 
     // Calculate peak occupancy
-    const peakOccupancy = Math.max(currentOccupancy, parseInt(document.getElementById('peakOccupancy').textContent || 0));
-    document.getElementById('peakOccupancy').textContent = peakOccupancy;
+    const peakEl = document.getElementById('peakOccupancy');
+    if (peakEl) {
+        const currentPeak = parseInt(peakEl.textContent || '0');
+        const newPeak = Math.max(currentOccupancy, currentPeak);
+        peakEl.textContent = newPeak;
+    }
 
-    // Calculate average duration
+    // Calculate average duration (in hours, not minutes)
     if (todayExits.length > 0) {
         const avgDuration = todayExits.reduce((sum, v) => sum + (v.actualDuration || 0), 0) / todayExits.length;
-        document.getElementById('avgDuration').textContent = `${Math.round(avgDuration)} min`;
+        updateElement('avgDuration', `${avgDuration.toFixed(1)} hrs`);
     }
 
     // Calculate utilization rate
-    const maxCapacity = parseInt(document.getElementById('maxCapacity').textContent || 50);
+    const maxCapacityEl = document.getElementById('maxCapacity');
+    const maxCapacity = maxCapacityEl ? parseInt(maxCapacityEl.textContent || '50') : 50;
     const utilizationRate = maxCapacity > 0 ? Math.round((currentOccupancy / maxCapacity) * 100) : 0;
-    document.getElementById('utilizationRate').textContent = `${utilizationRate}%`;
+    updateElement('utilizationRate', `${utilizationRate}%`);
 
     // Update status badge
     const statusBadge = document.getElementById('statusBadge');
-    if (utilizationRate >= 90) {
-        statusBadge.textContent = '🔴 Critical - Nearly Full';
-        statusBadge.style.background = 'rgba(220, 53, 69, 0.2)';
-        statusBadge.style.borderColor = '#dc3545';
-    } else if (utilizationRate >= 70) {
-        statusBadge.textContent = '🟡 High Occupancy';
-        statusBadge.style.background = 'rgba(255, 193, 7, 0.2)';
-        statusBadge.style.borderColor = '#ffc107';
-    } else {
-        statusBadge.textContent = '🟢 Normal Operation';
-        statusBadge.style.background = 'rgba(40, 167, 69, 0.2)';
-        statusBadge.style.borderColor = '#28a745';
+    if (statusBadge) {
+        if (utilizationRate >= 90) {
+            statusBadge.textContent = '🔴 Critical - Nearly Full';
+            statusBadge.style.background = 'rgba(220, 53, 69, 0.2)';
+            statusBadge.style.borderColor = '#dc3545';
+        } else if (utilizationRate >= 70) {
+            statusBadge.textContent = '🟡 High Occupancy';
+            statusBadge.style.background = 'rgba(255, 193, 7, 0.2)';
+            statusBadge.style.borderColor = '#ffc107';
+        } else {
+            statusBadge.textContent = '🟢 Normal Operation';
+            statusBadge.style.background = 'rgba(40, 167, 69, 0.2)';
+            statusBadge.style.borderColor = '#28a745';
+        }
     }
 
     console.log('📊 Dashboard stats updated:', {
@@ -340,13 +365,19 @@ function updateDashboardStats() {
         exits: exitsCount,
         occupancy: currentOccupancy,
         revenue: totalRevenue,
-        utilization: utilizationRate
+        utilization: utilizationRate,
+        parkedVehicles: parkedVehicles.length,
+        historyRecords: vehicleHistory.length
     });
 }
 
 // ========== RECENT LOGS UPDATE ==========
 
 function loadRecentLogs() {
+    // Reload data from localStorage to get latest changes
+    parkedVehicles = JSON.parse(localStorage.getItem('parkedVehicles') || '[]');
+    vehicleHistory = JSON.parse(localStorage.getItem('vehicleHistory') || '[]');
+
     const container = document.getElementById('recentLogs');
 
     if (!container) return; // Element might not exist on all pages
