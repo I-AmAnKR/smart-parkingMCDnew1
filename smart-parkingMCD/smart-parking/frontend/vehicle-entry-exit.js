@@ -397,18 +397,20 @@ function loadRecentLogs() {
 
 // ========== INITIALIZE ==========
 
-// Update stats on page load
-if (typeof updateDashboardStats === 'function') {
-    updateDashboardStats();
+// Prevent duplicate initialization
+if (!window.vehicleSystemInitialized) {
+    window.vehicleSystemInitialized = true;
+
+    // Update stats on page load (only once)
+    setTimeout(() => {
+        if (typeof updateDashboardStats === 'function') {
+            updateDashboardStats();
+        }
+    }, 1000); // Wait 1 second for DOM to be ready
+
+    console.log('✅ Vehicle Entry/Exit system initialized');
+    console.log(`📊 Currently parked: ${parkedVehicles.length} vehicles`);
+    console.log(`📜 History records: ${vehicleHistory.length} transactions`);
 }
 
-// Auto-refresh stats every 10 seconds
-setInterval(() => {
-    if (typeof updateDashboardStats === 'function') {
-        updateDashboardStats();
-    }
-}, 10000);
-
-console.log('✅ Vehicle Entry/Exit system initialized');
-console.log(`📊 Currently parked: ${parkedVehicles.length} vehicles`);
-console.log(`📜 History records: ${vehicleHistory.length} transactions`);
+// Note: Auto-refresh is handled by contractor.js to avoid duplicate intervals

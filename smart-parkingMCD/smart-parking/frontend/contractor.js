@@ -46,12 +46,24 @@ loadContractorStats();
 // Auto-refresh every 10 seconds
 setInterval(() => {
     loadStatus();
-    loadRecentLogs();
     loadContractorStats();
+
+    // Also update vehicle entry/exit stats if the system is loaded
+    if (typeof updateDashboardStats === 'function') {
+        updateDashboardStats();
+    }
+
+    // Update recent logs (vehicle system will override if it exists)
+    loadRecentLogs();
 }, 10000);
 
 // Load contractor statistics
 async function loadContractorStats() {
+    // If vehicle entry/exit system is loaded, let it handle stats
+    if (window.vehicleSystemInitialized) {
+        return; // Skip to avoid conflicts
+    }
+
     try {
         const { parkingLotId } = user;
         const today = new Date();
@@ -77,10 +89,14 @@ async function loadContractorStats() {
             const latestLog = logs[0];
             const currentOccupancy = latestLog ? latestLog.currentOccupancy : 0;
 
-            // Update stat boxes
-            document.getElementById('todayEntries').textContent = entries;
-            document.getElementById('todayExits').textContent = exits;
-            document.getElementById('currentOccupancyStat').textContent = currentOccupancy;
+            // Update stat boxes (only if elements exist)
+            const entriesEl = document.getElementById('todayEntries');
+            const exitsEl = document.getElementById('todayExits');
+            const occupancyEl = document.getElementById('currentOccupancyStat');
+
+            if (entriesEl) entriesEl.textContent = entries;
+            if (exitsEl) exitsEl.textContent = exits;
+            if (occupancyEl) occupancyEl.textContent = currentOccupancy;
         }
     } catch (error) {
         console.error('Error loading contractor stats:', error);
