@@ -299,6 +299,14 @@ router.get('/admin/dashboard', authMiddleware, adminOnly, async (req, res) => {
 });
 
 /**
+ * GET /api/parking/admin/violations
+ * Get violations report for admin
+ */
+router.get('/admin/violations', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
     const violations = await ParkingLog.find({
       isViolation: true,
       timestamp: { $gte: startDate }
