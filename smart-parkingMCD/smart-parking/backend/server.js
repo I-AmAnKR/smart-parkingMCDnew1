@@ -102,9 +102,11 @@ app.get('/api/health', (req, res) => {
 
 // Debug: Log environment variables
 console.log('PORT:', process.env.PORT);
-console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Defined' : 'Undefined');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✅ Defined' : '❌ UNDEFINED - login will fail!');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Defined' : '❌ UNDEFINED - auth will fail!');
 if (process.env.MONGODB_URI) {
-  console.log('MONGODB_URI starts with:', process.env.MONGODB_URI.substring(0, 20));
+  console.log('MONGODB_URI starts with:', process.env.MONGODB_URI.substring(0, 30));
 }
 
 // MongoDB Connection with retry logic
@@ -120,12 +122,18 @@ const server = app.listen(PORT, () => {
 
 // Connect to MongoDB with retries
 async function connectMongoDB() {
+  if (!process.env.MONGODB_URI) {
+    console.error('❌ MONGODB_URI is not set! Please add it in Render Environment Variables.');
+    return;
+  }
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      connectTimeoutMS: 15000,
+      maxPoolSize: 10,
     });
-    console.log('✅ Connected to MongoDB');
+    console.log('✅ Connected to MongoDB Atlas successfully!');
     retryCount = 0;
 
     // Create demo users after successful connection
@@ -133,35 +141,67 @@ async function connectMongoDB() {
 
   } catch (error) {
     retryCount++;
-    console.error(`❌ MongoDB connection attempt ${retryCount} failed:`, error.message);
+    // Log full error for Render logs
+    console.error(`❌ MongoDB connection attempt ${retryCount} failed:`);
+    console.error('   Error name:', error.name);
+    console.error('   Error message:', error.message);
+    if (error.reason) console.error('   Reason:', JSON.stringify(error.reason));
 
     if (retryCount < MAX_RETRIES) {
-      const delay = Math.min(5000 * retryCount, 30000); // exponential backoff, max 30s
-      console.log(`🔄 Retrying in ${delay / 1000}s... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      const delay = Math.min(5000 * retryCount, 30000);
+      console.log(`🔄 Retrying MongoDB in ${delay / 1000}s... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
       setTimeout(connectMongoDB, delay);
     } else {
-      console.error('💥 Max retries reached. Server running without DB - some endpoints will fail.');
-      // Don't exit - keep server alive so health check still passes
+      console.error('💥 All MongoDB retries exhausted.');
+      console.error('💡 Fix: Check MongoDB Atlas Network Access - allow 0.0.0.0/0');
+      console.error('💡 Fix: Verify MONGODB_URI env var in Render dashboard');
     }
   }
 }
 
+// Diagnostic endpoint - check DB connection on demand
+app.get('/api/debug-db', async (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const info = {
+    dbStatus: states[dbState] || 'unknown',
+    dbConnected: dbState === 1,
+    mongoUriSet: !!process.env.MONGODB_URI,
+    jwtSecretSet: !!process.env.JWT_SECRET,
+    nodeEnv: process.env.NODE_ENV,
+    port: process.env.PORT,
+    retryCount,
+    timestamp: new Date().toISOString()
+  };
+  // Try a fresh ping if disconnected
+  if (dbState !== 1 && process.env.MONGODB_URI) {
+    try {
+      await mongoose.connection.db?.admin().ping();
+      info.pingResult = 'success';
+    } catch (e) {
+      info.pingError = e.message;
+    }
+  }
+  res.json(info);
+});
+
 connectMongoDB();
 
 // Keep-alive ping every 14 minutes to prevent Render free tier spin-down
-if (process.env.NODE_ENV === 'production') {
-  const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-  setInterval(async () => {
+// Runs in ALL environments (NODE_ENV may not be 'production' on free Render)
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+if (process.env.RENDER_EXTERNAL_URL) {
+  setInterval(() => {
     try {
       const https = require('https');
       const http = require('http');
       const client = SELF_URL.startsWith('https') ? https : http;
       client.get(`${SELF_URL}/api/health`, (res) => {
         console.log(`💓 Keep-alive ping: ${res.statusCode}`);
-      }).on('error', () => {}); // Silently ignore errors
+      }).on('error', () => {});
     } catch (e) { /* ignore */ }
-  }, 14 * 60 * 1000); // every 14 minutes
-  console.log('💓 Keep-alive ping enabled (every 14 min)');
+  }, 14 * 60 * 1000);
+  console.log(`💓 Keep-alive enabled → pinging ${SELF_URL} every 14 min`);
 }
 
 
