@@ -78,12 +78,25 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/contractors', contractorRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Health check
+
+// Health check - shows DB status for diagnostics
 app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.json({
     success: true,
     message: 'Smart Parking API is running',
-    timestamp: new Date()
+    timestamp: new Date(),
+    database: {
+      status: dbStates[dbState] || 'unknown',
+      connected: dbState === 1
+    },
+    env: {
+      MONGODB_URI: process.env.MONGODB_URI ? '✅ Set' : '❌ MISSING',
+      JWT_SECRET: process.env.JWT_SECRET ? '✅ Set' : '❌ MISSING',
+      PORT: process.env.PORT || '(default 5000)',
+      NODE_ENV: process.env.NODE_ENV || 'development'
+    }
   });
 });
 
