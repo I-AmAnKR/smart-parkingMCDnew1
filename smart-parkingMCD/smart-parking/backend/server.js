@@ -94,24 +94,63 @@ if (process.env.MONGODB_URI) {
   console.log('MONGODB_URI starts with:', process.env.MONGODB_URI.substring(0, 20));
 }
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log('✅ Connected to MongoDB');
+// MongoDB Connection with retry logic
+const MAX_RETRIES = 5;
+let retryCount = 0;
 
-    // Create demo users if they don't exist
+// Start HTTP server FIRST so Render health checks pass immediately
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 API URL: http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+});
+
+// Connect to MongoDB with retries
+async function connectMongoDB() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ Connected to MongoDB');
+    retryCount = 0;
+
+    // Create demo users after successful connection
     await createDemoUsers();
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📍 API URL: http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  });
+  } catch (error) {
+    retryCount++;
+    console.error(`❌ MongoDB connection attempt ${retryCount} failed:`, error.message);
+
+    if (retryCount < MAX_RETRIES) {
+      const delay = Math.min(5000 * retryCount, 30000); // exponential backoff, max 30s
+      console.log(`🔄 Retrying in ${delay / 1000}s... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      setTimeout(connectMongoDB, delay);
+    } else {
+      console.error('💥 Max retries reached. Server running without DB - some endpoints will fail.');
+      // Don't exit - keep server alive so health check still passes
+    }
+  }
+}
+
+connectMongoDB();
+
+// Keep-alive ping every 14 minutes to prevent Render free tier spin-down
+if (process.env.NODE_ENV === 'production') {
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  setInterval(async () => {
+    try {
+      const https = require('https');
+      const http = require('http');
+      const client = SELF_URL.startsWith('https') ? https : http;
+      client.get(`${SELF_URL}/api/health`, (res) => {
+        console.log(`💓 Keep-alive ping: ${res.statusCode}`);
+      }).on('error', () => {}); // Silently ignore errors
+    } catch (e) { /* ignore */ }
+  }, 14 * 60 * 1000); // every 14 minutes
+  console.log('💓 Keep-alive ping enabled (every 14 min)');
+}
+
 
 /**
  * Create demo users for hackathon demonstration

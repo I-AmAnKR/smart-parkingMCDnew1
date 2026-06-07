@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: smart-parking-mcd-b
+    runtime: node
+    rootDir: smart-parkingMCD/smart-parking/backend
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
